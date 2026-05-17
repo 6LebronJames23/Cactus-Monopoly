@@ -1,0 +1,208 @@
+import { useState, useRef } from 'react';
+import { GameState, BoardSpace } from '../types/game';
+import { socket } from '../socket';
+import { BOARD_SPACES } from '../data/board';
+import { usePlayerMovement } from '../hooks/usePlayerMovement';
+import { useToasts } from '../hooks/useToasts';
+import Board from './Board';
+import PlayerPanel from './PlayerPanel';
+import GameLog from './GameLog';
+import CardModal from './CardModal';
+import PropertyModal from './PropertyModal';
+import TradeModal, { IncomingTradeModal } from './TradeModal';
+import AuctionModal from './AuctionModal';
+
+interface Props {
+  gameState: GameState;
+  myId: string;
+}
+
+export default function Game({ gameState, myId }: Props) {
+  const [selectedSpace, setSelectedSpace] = useState<BoardSpace | null>(null);
+  const [showTrade, setShowTrade] = useState(false);
+  const [isRolling, setIsRolling] = useState(false);
+
+  const { visualPositions } = usePlayerMovement(gameState.players);
+  const toasts = useToasts(gameState.log);
+
+  const me = gameState.players.find(p => p.id === myId);
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const isMyTurn = currentPlayer?.id === myId;
+  const { turnPhase, dice, currentCard } = gameState;
+
+  const emit = (event: string, data: any = {}, onDone?: () => void) => {
+    socket.emit(event, data, (res: any) => {
+      if (res && !res.ok) console.warn(res.error);
+      onDone?.();
+    });
+  };
+
+  const handleRoll = () => {
+    setIsRolling(true);
+    // Give the dice 900ms to spin before the server responds
+    setTimeout(() => {
+      emit('roll_dice', {}, () => setIsRolling(false));
+    }, 200);
+  };
+
+  return (
+    <div className="game-layout">
+      {/* LEFT: player cards */}
+      <aside className="side-panel side-panel--left">
+        <PlayerPanel gameState={gameState} myId={myId} onSelectSpace={setSelectedSpace} />
+      </aside>
+
+      {/* CENTER: board + controls */}
+      <main className="board-area">
+        <Board
+          gameState={gameState}
+          myId={myId}
+          visualPositions={visualPositions}
+          isRolling={isRolling}
+          onSpaceClick={setSelectedSpace}
+        />
+
+        {/* ── Action Bar ── */}
+        <div className="action-bar">
+          {gameState.gamePhase === 'playing' && isMyTurn && me && !me.bankrupt && (
+            <div className="action-bar__my-turn">
+              <span className="action-bar__label">Your turn</span>
+
+              {/* JAIL controls */}
+              {turnPhase === 'roll' && me.inJail && (
+                <div className="action-bar__group">
+                  <ActionBtn onClick={handleRoll} disabled={isRolling} variant="roll">
+                    🎲 Roll for doubles
+                  </ActionBtn>
+                  {me.getOutOfJailCards > 0 && (
+                    <ActionBtn onClick={() => emit('use_jail_card')} variant="secondary">
+                      🃏 Use card
+                    </ActionBtn>
+                  )}
+                  <ActionBtn onClick={() => emit('pay_jail_fine')} variant="secondary">
+                    💰 Pay $50
+                  </ActionBtn>
+                </div>
+              )}
+
+              {/* Normal roll */}
+              {turnPhase === 'roll' && !me.inJail && (
+                <ActionBtn onClick={handleRoll} disabled={isRolling} variant="roll">
+                  {isRolling ? '🎲 Rolling…' : '🎲 Roll Dice'}
+                </ActionBtn>
+              )}
+
+              {/* Buy decision */}
+              {turnPhase === 'buy_decision' && gameState.pendingBuySpaceIndex !== null && (() => {
+                const space = BOARD_SPACES[gameState.pendingBuySpaceIndex];
+                return (
+                  <div className="action-bar__group">
+                    <span className="action-bar__buy-info">
+                      Buy <b>{space.flag} {space.name}</b> for <b>${space.price}</b>?
+                    </span>
+                    <ActionBtn onClick={() => emit('buy_property')} variant="buy">✓ Buy</ActionBtn>
+                    <ActionBtn onClick={() => emit('decline_buy')} variant="decline">✗ Pass</ActionBtn>
+                  </div>
+                );
+              })()}
+
+              {/* End turn */}
+              {turnPhase === 'done' && (
+                <ActionBtn onClick={() => emit('end_turn')} variant="end">
+                  End Turn →
+                </ActionBtn>
+              )}
+            </div>
+          )}
+
+          {gameState.gamePhase === 'playing' && !isMyTurn && (
+            <div className="action-bar__waiting">
+              <span className="action-bar__waiting-dot" style={{ background: currentPlayer?.color }} />
+              Waiting for <b>{currentPlayer?.name}</b>…
+            </div>
+          )}
+
+          {gameState.gamePhase === 'ended' && (
+            <div className="action-bar__winner">
+              🏆 {gameState.players.find(p => !p.bankrupt)?.name} wins the game!
+            </div>
+          )}
+
+          <div className="action-bar__right">
+            {me && !me.bankrupt && gameState.gamePhase === 'playing' && !gameState.pendingTrade && (
+              <button className="btn-trade" onClick={() => setShowTrade(true)}>🤝 Trade</button>
+            )}
+            {me && !me.bankrupt && gameState.gamePhase === 'playing' && (
+              <button
+                className="btn-bankrupt"
+                onClick={() => { if (confirm('Declare bankruptcy?')) emit('declare_bankruptcy'); }}
+              >
+                💸
+              </button>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* RIGHT: log */}
+      <aside className="side-panel side-panel--right">
+        <GameLog log={gameState.log} />
+      </aside>
+
+      {/* ── Toast notifications ── */}
+      <div className="toast-stack">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast--${t.type}`}>{t.message}</div>
+        ))}
+      </div>
+
+      {/* ── Modals ── */}
+      {currentCard && isMyTurn && turnPhase === 'card' && (
+        <CardModal card={currentCard} onOk={() => emit('resolve_card')} />
+      )}
+      {selectedSpace && (
+        <PropertyModal
+          space={selectedSpace}
+          owned={gameState.ownedProperties[selectedSpace.index]}
+          players={gameState.players}
+          myId={myId}
+          isMyTurn={isMyTurn}
+          onBuyHouse={() => emit('buy_house', { spaceIndex: selectedSpace.index })}
+          onSellHouse={() => emit('sell_house', { spaceIndex: selectedSpace.index })}
+          onMortgage={() => emit('mortgage_property', { spaceIndex: selectedSpace.index })}
+          onUnmortgage={() => emit('unmortgage_property', { spaceIndex: selectedSpace.index })}
+          onClose={() => setSelectedSpace(null)}
+        />
+      )}
+      {showTrade && !gameState.pendingTrade && (
+        <TradeModal gameState={gameState} myId={myId} onClose={() => setShowTrade(false)} />
+      )}
+      {gameState.pendingAuction && (
+        <AuctionModal auction={gameState.pendingAuction} gameState={gameState} myId={myId} />
+      )}
+      {gameState.pendingTrade &&
+        (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId) && (
+          <IncomingTradeModal gameState={gameState} myId={myId} />
+        )}
+    </div>
+  );
+}
+
+function ActionBtn({
+  children, onClick, disabled, variant,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  variant: 'roll' | 'secondary' | 'buy' | 'decline' | 'end';
+}) {
+  return (
+    <button
+      className={`action-btn action-btn--${variant}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
