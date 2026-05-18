@@ -471,7 +471,9 @@ export class GameRoom {
     const card = this.state.currentCard!;
     this.applyCardEffect(player, card);
     this.state.currentCard = null;
-    if (this.state.turnPhase !== 'buy_decision' && this.state.turnPhase !== 'card') {
+    // If the effect didn't change the phase (e.g. moved to unowned property),
+    // always finish the card phase. Only preserve buy_decision set by landOnSpace.
+    if (this.state.turnPhase === 'card') {
       this.state.turnPhase = 'done';
     }
     this.broadcast();
