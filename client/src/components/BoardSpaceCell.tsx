@@ -51,12 +51,17 @@ export default function BoardSpaceCell({
     `bs--${side}`,
     isCorner ? 'bs--corner' : '',
     `bs--${space.type}`,
+    owner ? 'bs--owned' : '',
     isMortgaged ? 'bs--mortgaged' : '',
     playersHere.length ? 'bs--occupied' : '',
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={cls} onClick={onClick}>
+    <div
+      className={cls}
+      onClick={onClick}
+      style={owner ? { '--owner-color': owner.color } as React.CSSProperties : undefined}
+    >
       {/* Color band for property/airport/utility */}
       {groupColor && !isCorner && (
         <div
@@ -65,9 +70,11 @@ export default function BoardSpaceCell({
         />
       )}
 
-      {/* Owner indicator dot */}
+      {/* Owner badge */}
       {owner && !isCorner && (
-        <div className="bs__owner-dot" style={{ background: owner.color }} />
+        <div className="bs__owner-badge" style={{ background: owner.color }} title={`Owned by ${owner.name}`}>
+          {owner.token}
+        </div>
       )}
 
       {/* Houses / hotel */}

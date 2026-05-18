@@ -813,19 +813,40 @@ html, body, #root {
 /* Mortgaged */
 .bs--mortgaged .bs__body { opacity: 0.3; }
 
-/* Owner dot */
-.bs__owner-dot {
+/* Owned — color tint overlay */
+.bs--owned::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--owner-color, transparent);
+  opacity: 0.13;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 2px;
+}
+
+/* Owner badge — shows player token */
+.bs__owner-badge {
   position: absolute;
   bottom: 3px;
   right: 3px;
-  width: 7px;
-  height: 7px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.2);
-  z-index: 4;
-  transition: box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  z-index: 5;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.bs:hover .bs__owner-dot { box-shadow: 0 0 7px currentColor; }
+.bs:hover .bs__owner-badge {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.3);
+}
 
 /* Houses */
 .bs__houses {
