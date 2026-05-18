@@ -87,6 +87,18 @@ export class GameRoom {
     this.broadcast();
   }
 
+  kickPlayer(requesterId: string, targetId: string): string | null {
+    if (requesterId !== this.state.hostId) return 'Only the host can kick players';
+    if (requesterId === targetId) return 'You cannot kick yourself';
+    if (this.state.gamePhase !== 'lobby') return 'Cannot kick during a game';
+    const idx = this.state.players.findIndex(p => p.id === targetId);
+    if (idx === -1) return 'Player not found';
+    this.state.players.splice(idx, 1);
+    this.io.to(targetId).emit('kicked');
+    this.broadcast();
+    return null;
+  }
+
   setReady(playerId: string, ready: boolean) {
     const p = this.getPlayer(playerId);
     if (p) p.isReady = ready;

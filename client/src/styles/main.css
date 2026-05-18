@@ -208,6 +208,20 @@ html, body, #root {
 }
 .btn-copy:hover { color: var(--text); background: var(--border); }
 
+.btn-kick {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.btn-kick:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
 .player-list { display: flex; flex-direction: column; gap: 8px; }
 .player-row {
   display: flex;

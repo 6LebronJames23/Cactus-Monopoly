@@ -24,6 +24,10 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
     socket.emit('set_ready', { ready: !me?.isReady });
   };
 
+  const kickPlayer = (targetId: string) => {
+    socket.emit('kick_player', { targetId });
+  };
+
   const startGame = () => {
     socket.emit('start_game', {}, (res: any) => {
       if (!res.ok) alert(res.error);
@@ -63,6 +67,9 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
                 <span className={`ready-badge ${p.isReady || p.id === gameState.hostId ? 'ready' : 'not-ready'}`}>
                   {p.id === gameState.hostId ? 'host' : p.isReady ? '✓ Ready' : 'Not ready'}
                 </span>
+                {isHost && p.id !== myId && (
+                  <button className="btn-kick" onClick={() => kickPlayer(p.id)} title="Kick player">✕</button>
+                )}
               </div>
             ))}
             {gameState.players.length < 9 && (

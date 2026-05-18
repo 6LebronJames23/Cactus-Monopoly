@@ -51,6 +51,13 @@ io.on('connection', (socket) => {
     room.broadcast();
   });
 
+  socket.on('kick_player', ({ targetId }: { targetId: string }, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.kickPlayer(socket.id, targetId);
+    cb?.({ ok: !err, error: err });
+  });
+
   socket.on('set_ready', ({ ready }: { ready: boolean }) => {
     const room = rooms.get((socket as any).roomId);
     if (!room) return;

@@ -22,7 +22,13 @@ export default function App() {
         setScreen('game');
       }
     });
-    return () => { socket.off('connect'); socket.off('game_state'); };
+    socket.on('kicked', () => {
+      socket.disconnect();
+      setScreen('home');
+      setGameState(null);
+      setError('You were kicked from the room.');
+    });
+    return () => { socket.off('connect'); socket.off('game_state'); socket.off('kicked'); };
   }, []);
 
   const handleCreate = (name: string) => {
