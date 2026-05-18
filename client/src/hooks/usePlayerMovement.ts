@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Player } from '../types/game';
 
-const TOTAL_SPACES = 80;
+const TOTAL_SPACES = 60;
 const STEP_MS = 160; // ms per space moved
-const JAIL_INDEX = 20;
+const JAIL_INDEX = 15;
 
 export function usePlayerMovement(players: Player[]) {
   // Visual positions (what's rendered) may lag behind logical positions during animation

@@ -27,7 +27,7 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
         key={`${side}-${index}`}
         space={space}
         side={side}
-        isCorner={index === 0 || index === 20 || index === 40 || index === 60}
+        isCorner={index === 0 || index === 15 || index === 30 || index === 45}
         playersHere={getPlayersAt(index)}
         owner={getOwner(index)}
         owned={ownedProperties[index]}
@@ -37,11 +37,11 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
     );
   };
 
-  // 80-space board: corners at 0, 20, 40, 60
-  const bottomRow = Array.from({ length: 21 }, (_, i) => i);            // 0..20  left→right
-  const rightCol  = Array.from({ length: 19 }, (_, i) => i + 21);       // 21..39 bottom→top
-  const topRow    = Array.from({ length: 21 }, (_, i) => 40 + i);       // 40..60 right→left
-  const leftCol   = Array.from({ length: 19 }, (_, i) => 61 + i);       // 61..79 top→bottom
+  // 60-space board: corners at 0, 15, 30, 45
+  const bottomRow = Array.from({ length: 16 }, (_, i) => i);            // 0..15  left→right
+  const rightCol  = Array.from({ length: 14 }, (_, i) => i + 16);       // 16..29 bottom→top
+  const topRow    = Array.from({ length: 16 }, (_, i) => 30 + i);       // 30..45 right→left
+  const leftCol   = Array.from({ length: 14 }, (_, i) => 46 + i);       // 46..59 top→bottom
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
@@ -52,7 +52,7 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
         {/* TOP ROW: 60 → 40 left→right */}
         <div className="board__row board__row--top">
           {[...topRow].reverse().map(i =>
-            renderSpace(i, 'top', i === 40 || i === 60)
+            renderSpace(i, 'top', i === 30 || i === 45)
           )}
         </div>
 
