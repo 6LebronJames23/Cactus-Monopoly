@@ -22,6 +22,7 @@ export class GameRoom {
   public state: GameState;
   private deck: CardDeck;
   private io: Server;
+  private disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(io: Server, roomId: string, hostId: string, hostName: string) {
     this.io = io;
@@ -71,32 +72,85 @@ export class GameRoom {
   removePlayer(id: string) {
     const idx = this.state.players.findIndex(p => p.id === id);
     if (idx === -1) return;
-    // Release properties if game was in progress
+
     if (this.state.gamePhase === 'playing') {
       const player = this.state.players[idx];
-      player.properties.forEach(si => {
-        delete this.state.ownedProperties[si];
-      });
-      player.bankrupt = true;
+      if (player.bankrupt) return;
+      // Start 2-minute grace period before auto-removing
+      this.addLog(`⚠️ ${player.name} disconnected. Removing in 2 minutes if they don't return.`);
+      this.broadcast();
+      const timer = setTimeout(() => {
+        this.disconnectTimers.delete(id);
+        const p = this.getPlayer(id);
+        if (p && !p.bankrupt) this.forceBankrupt(p, 'was removed after disconnecting.');
+      }, 2 * 60 * 1000);
+      this.disconnectTimers.set(id, timer);
     } else {
       this.state.players.splice(idx, 1);
+      if (this.state.hostId === id && this.state.players.length > 0) {
+        this.state.hostId = this.state.players[0].id;
+      }
+      this.broadcast();
     }
-    if (this.state.hostId === id && this.state.players.length > 0) {
-      this.state.hostId = this.state.players[0].id;
-    }
-    this.broadcast();
   }
 
   kickPlayer(requesterId: string, targetId: string): string | null {
     if (requesterId !== this.state.hostId) return 'Only the host can kick players';
     if (requesterId === targetId) return 'You cannot kick yourself';
-    if (this.state.gamePhase !== 'lobby') return 'Cannot kick during a game';
-    const idx = this.state.players.findIndex(p => p.id === targetId);
-    if (idx === -1) return 'Player not found';
-    this.state.players.splice(idx, 1);
+    const target = this.getPlayer(targetId);
+    if (!target) return 'Player not found';
+
+    // Cancel any pending disconnect timer
+    const timer = this.disconnectTimers.get(targetId);
+    if (timer) { clearTimeout(timer); this.disconnectTimers.delete(targetId); }
+
     this.io.to(targetId).emit('kicked');
-    this.broadcast();
+
+    if (this.state.gamePhase !== 'playing') {
+      const idx = this.state.players.findIndex(p => p.id === targetId);
+      this.state.players.splice(idx, 1);
+      this.broadcast();
+    } else {
+      this.forceBankrupt(target, 'was kicked by the host.');
+    }
     return null;
+  }
+
+  private forceBankrupt(player: Player, reason: string) {
+    if (player.bankrupt) return;
+    player.bankrupt = true;
+    player.properties.forEach(si => { delete this.state.ownedProperties[si]; });
+    player.properties = [];
+    player.money = 0;
+    // Cancel any pending trade involving this player
+    if (this.state.pendingTrade &&
+        (this.state.pendingTrade.fromId === player.id || this.state.pendingTrade.toId === player.id)) {
+      this.state.pendingTrade = null;
+    }
+    this.addLog(`${player.name} ${reason} 💸`);
+
+    const active = this.state.players.filter(p => !p.bankrupt);
+    if (active.length === 1) {
+      this.state.gamePhase = 'ended';
+      this.addLog(`🏆 ${active[0].name} wins the game!`);
+    } else if (this.currentPlayer().id === player.id) {
+      // Force-advance turn without normal validation
+      this.state.doublesCount = 0;
+      this.state.dice = null;
+      this.state.pendingBuySpaceIndex = null;
+      this.state.currentCard = null;
+      this.state.pendingAuction = null;
+      let next = (this.state.currentPlayerIndex + 1) % this.state.players.length;
+      let tries = 0;
+      while (this.state.players[next].bankrupt && tries < this.state.players.length) {
+        next = (next + 1) % this.state.players.length;
+        tries++;
+      }
+      this.state.currentPlayerIndex = next;
+      this.state.turnPhase = 'roll';
+      this.addLog(`It's ${this.state.players[next].name}'s turn.`);
+    }
+    this.broadcast();
   }
 
   setReady(playerId: string, ready: boolean) {
