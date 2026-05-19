@@ -49,6 +49,7 @@ export class GameRoom {
       vacationPot: 0,
       settings: { ...DEFAULT_SETTINGS },
       hostId,
+      boardOverrides: {},
       gameStats: {
         startedAt: 0,
         turnCount: 0,
@@ -240,6 +241,12 @@ export class GameRoom {
     this.state.gamePhase = 'playing';
     this.state.turnPhase = 'roll';
     this.state.currentPlayerIndex = 0;
+
+    // Shuffle property city names/flags if enabled
+    if (this.state.settings.shuffleProperties) {
+      this.state.boardOverrides = this.buildPropertyShuffle();
+    }
+
     this.addLog('Game started! Good luck everyone! 🌍');
     this.state.gameStats.startedAt = Date.now();
     this.broadcast();
@@ -543,6 +550,7 @@ export class GameRoom {
         break;
       case 'lose_money':
         this.chargeMoney(player, effect.amount!);
+        if (this.state.settings.vacationCash) this.state.vacationPot += effect.amount!;
         this.addLog(`${player.name} paid $${effect.amount!} (${card.title}).`);
         break;
       case 'get_out_of_jail':
@@ -1036,6 +1044,10 @@ export class GameRoom {
       this.botActionTimer = setTimeout(() => {
         this.botActionTimer = null;
         this.botBuildHouses(botId);
+        // Occasionally propose a trade (20% chance per turn if no trade pending)
+        if (!this.state.pendingTrade && Math.random() < 0.20) {
+          this.botProposeTrade(botId);
+        }
         this.endTurn(botId);
       }, 900);
     }
@@ -1050,14 +1062,21 @@ export class GameRoom {
     const space = BOARD_SPACES[si];
     const price = space.price ?? 0;
 
-    // Be more aggressive when buying completes a monopoly or pairs with an owned property
-    const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
-    const willCompleteMonopoly = groupSpaces.length > 0 &&
-      groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === botId);
-    const hasGroupMember = groupSpaces.some(i =>
-      i !== si && this.state.ownedProperties[i]?.ownerId === botId);
+    let minBuffer = 1.5;
 
-    const minBuffer = willCompleteMonopoly ? 1.0 : hasGroupMember ? 1.2 : 1.5;
+    if (space.type === 'property') {
+      const groupSpaces = getGroupSpaces(space.group!);
+      const willCompleteMonopoly = groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === botId);
+      const hasGroupMember = groupSpaces.some(i => i !== si && this.state.ownedProperties[i]?.ownerId === botId);
+      minBuffer = willCompleteMonopoly ? 1.0 : hasGroupMember ? 1.2 : 1.5;
+    } else if (space.type === 'airport') {
+      const ownedAirports = getAirportSpaces().filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
+      minBuffer = ownedAirports >= 1 ? 1.1 : 1.4;
+    } else if (space.type === 'utility') {
+      const ownedUtils = getUtilitySpaces().filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
+      minBuffer = ownedUtils >= 1 ? 1.1 : 1.4;
+    }
+
     if (bot.money >= price * minBuffer) {
       this.buyProperty(botId);
     } else {
@@ -1106,12 +1125,25 @@ export class GameRoom {
       const t = setTimeout(() => {
         this.botAuctionTimers.delete(bot.id);
         if (!this.state.pendingAuction) return;
-        const space = BOARD_SPACES[this.state.pendingAuction.spaceIndex];
+        const auc = this.state.pendingAuction;
+        const space = BOARD_SPACES[auc.spaceIndex];
         const price = space.price ?? 100;
-        const maxBid = Math.floor(price * 0.75);
-        const currentHigh = this.state.pendingAuction.highestBid;
-        const nextBid = Math.max(currentHigh + 10, Math.floor(price * 0.3));
-        if (nextBid > maxBid || bot.money < nextBid) {
+
+        // Bid higher if completing a monopoly or airport set
+        const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
+        const willCompleteMonopoly = groupSpaces.length > 0 &&
+          groupSpaces.every(i => i === auc.spaceIndex || auc.highestBidderId === bot.id ||
+            this.state.ownedProperties[i]?.ownerId === bot.id);
+        const hasGroupMember = groupSpaces.some(i => this.state.ownedProperties[i]?.ownerId === bot.id);
+        const airports = getAirportSpaces();
+        const ownedAirports = airports.filter(i => this.state.ownedProperties[i]?.ownerId === bot.id).length;
+
+        let bidCap = price * (willCompleteMonopoly ? 1.2 : hasGroupMember ? 0.95 : ownedAirports > 0 && space.type === 'airport' ? 0.9 : 0.65);
+        bidCap = Math.min(bidCap, bot.money - 200);
+
+        const currentHigh = auc.highestBid;
+        const nextBid = Math.max(currentHigh + 5, Math.floor(price * 0.25));
+        if (nextBid > bidCap || bot.money < nextBid) {
           this.passAuction(bot.id);
         } else {
           this.placeBid(bot.id, nextBid);
@@ -1131,7 +1163,115 @@ export class GameRoom {
     this.botTradeTimer = setTimeout(() => {
       this.botTradeTimer = null;
       if (!this.state.pendingTrade || this.state.pendingTrade.id !== trade.id) return;
-      this.declineTrade(bot.id, trade.id);
-    }, 1500);
+      const accept = this.botEvaluateTrade(bot, trade);
+      if (accept) {
+        this.acceptTrade(bot.id, trade.id);
+      } else {
+        this.declineTrade(bot.id, trade.id);
+      }
+    }, 1500 + Math.random() * 1000);
+  }
+
+  /** Returns true if the trade is favorable (or neutral) for bot */
+  private botEvaluateTrade(bot: Player, trade: TradeOffer): boolean {
+    const isReceiver = trade.toId === bot.id;
+    const receiving = {
+      properties: isReceiver ? trade.requestProperties : trade.offerProperties,
+      money: isReceiver ? trade.requestMoney : trade.offerMoney,
+      jailCards: isReceiver ? trade.requestJailCards : trade.offerJailCards,
+    };
+    const giving = {
+      properties: isReceiver ? trade.offerProperties : trade.requestProperties,
+      money: isReceiver ? trade.offerMoney : trade.requestMoney,
+      jailCards: isReceiver ? trade.offerJailCards : trade.requestJailCards,
+    };
+
+    const propValue = (indices: number[]) => indices.reduce((sum, si) => {
+      const space = BOARD_SPACES[si];
+      const base = space.price ?? 0;
+      // Bonus if completing a monopoly
+      const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
+      const alreadyOwned = groupSpaces.filter(i => i !== si && this.state.ownedProperties[i]?.ownerId === bot.id).length;
+      const completesGroup = alreadyOwned === groupSpaces.length - 1;
+      return sum + base * (completesGroup ? 1.6 : alreadyOwned > 0 ? 1.2 : 1.0);
+    }, 0);
+
+    const receiveValue = propValue(receiving.properties) + receiving.money + receiving.jailCards * 50;
+    const giveValue    = propValue(giving.properties)    + giving.money    + giving.jailCards * 50;
+
+    // Accept if receiving at least 90% of value given, or completing a monopoly
+    const completesMonopoly = receiving.properties.some(si => {
+      const space = BOARD_SPACES[si];
+      if (!space.group) return false;
+      const groupSpaces = getGroupSpaces(space.group);
+      return groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === bot.id);
+    });
+
+    if (completesMonopoly) return receiveValue >= giveValue * 0.75;
+    return receiveValue >= giveValue * 0.9;
+  }
+
+  /** Bot tries to propose a beneficial trade at end of turn */
+  private botProposeTrade(botId: string) {
+    if (this.state.pendingTrade) return; // trade already pending
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot || bot.bankrupt) return;
+
+    const activePlayers = this.state.players.filter(p => !p.bankrupt && p.id !== botId);
+    if (!activePlayers.length) return;
+
+    // Find the best trade opportunity: bot gives something it doesn't need,
+    // gets something that completes/advances a monopoly
+    for (const target of activePlayers) {
+      for (const wantSi of target.properties) {
+        const space = BOARD_SPACES[wantSi];
+        if (!space.group) continue;
+        const owned = this.state.ownedProperties[wantSi];
+        if (owned?.mortgaged) continue;
+        const groupSpaces = getGroupSpaces(space.group);
+        const botOwnsInGroup = groupSpaces.filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
+        if (botOwnsInGroup === 0) continue; // no stake in this group
+
+        // Find something to offer that target might want
+        for (const offerSi of bot.properties) {
+          const offerSpace = BOARD_SPACES[offerSi];
+          const offerOwned = this.state.ownedProperties[offerSi];
+          if (offerOwned?.mortgaged || (offerOwned?.houses ?? 0) > 0) continue;
+          if (offerSpace.group === space.group) continue; // don't offer from same group
+
+          // Offer a fair trade: property price parity
+          const priceDiff = (offerSpace.price ?? 0) - (space.price ?? 0);
+          const offerMoney = priceDiff > 0 ? 0 : Math.min(-priceDiff, Math.floor(bot.money * 0.3));
+          const requestMoney = priceDiff > 0 ? Math.min(priceDiff, Math.floor(target.money * 0.3)) : 0;
+
+          const err = this.proposeTrade(botId, {
+            toId: target.id,
+            offerProperties: [offerSi],
+            offerMoney,
+            offerJailCards: 0,
+            requestProperties: [wantSi],
+            requestMoney,
+            requestJailCards: 0,
+          });
+          if (!err) return; // proposed one trade, done
+        }
+      }
+    }
+  }
+
+  /** Build a shuffled mapping of property city names & flags */
+  private buildPropertyShuffle(): Record<number, { name: string; flag?: string }> {
+    const propSpaces = BOARD_SPACES.filter(s => s.type === 'property');
+    const overrides: Record<number, { name: string; flag?: string }> = {};
+    // Extract city name+flag pairs and shuffle them
+    const cities = propSpaces.map(s => ({ name: s.name, flag: s.flag }));
+    for (let i = cities.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cities[i], cities[j]] = [cities[j], cities[i]];
+    }
+    propSpaces.forEach((s, i) => {
+      overrides[s.index] = cities[i];
+    });
+    return overrides;
   }
 }

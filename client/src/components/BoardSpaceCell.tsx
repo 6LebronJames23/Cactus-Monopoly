@@ -9,6 +9,7 @@ interface Props {
   owner?: Player;
   owned?: OwnedProperty;
   groupColor?: string;
+  vacationPot?: number;
   onClick: () => void;
 }
 
@@ -27,7 +28,7 @@ const SPACE_ICONS: Record<string, string> = {
 };
 
 export default function BoardSpaceCell({
-  space, side, isCorner, playersHere, owner, owned, groupColor, onClick,
+  space, side, isCorner, playersHere, owner, owned, groupColor, vacationPot, onClick,
 }: Props) {
   const isMortgaged = owned?.mortgaged ?? false;
   const houses = owned?.houses ?? 0;
@@ -88,13 +89,13 @@ export default function BoardSpaceCell({
         </div>
       )}
 
-      {/* Houses / hotel */}
+      {/* Houses / hotel — prominent colored badges */}
       {houses > 0 && !isCorner && (
         <div className={`bs__houses bs__houses--${side}`}>
           {houses === 5
-            ? <span className="bs__hotel">🏨</span>
+            ? <span className="bs__hotel-badge">H</span>
             : Array.from({ length: houses }, (_, i) => (
-                <span key={i} className="bs__house">🏠</span>
+                <span key={i} className="bs__house-pip" />
               ))}
         </div>
       )}
@@ -105,6 +106,11 @@ export default function BoardSpaceCell({
           <div className={`bs__corner-content bs__corner-content--${space.type}`}>
             <span className="bs__corner-icon">{spaceIcon}</span>
             <span className="bs__corner-name">{space.name}</span>
+            {space.type === 'free_parking' && vacationPot !== undefined && (
+              <span className="bs__vacation-pot">
+                {vacationPot > 0 ? `💰 $${vacationPot.toLocaleString()}` : 'No pot yet'}
+              </span>
+            )}
           </div>
         ) : owner ? (
           <>

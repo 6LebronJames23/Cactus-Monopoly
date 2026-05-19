@@ -82,10 +82,19 @@ export default function PropertyModal({
         {space.type === 'utility' && (
           <>
             <div className="property-price">Price: <b>${space.price}</b></div>
-            <div className="utility-note">
-              Own 1 utility: pay 4× dice roll<br />
-              Own all 3: pay 10× dice roll
-            </div>
+            <table className="rent-table">
+              <tbody>
+                <tr className={owned && !owned.mortgaged ? 'rent-row--active' : ''}>
+                  <td>Own 1 utility</td><td><b>Dice × 4</b></td>
+                </tr>
+                <tr>
+                  <td>Own 2 utilities</td><td><b>Dice × 8</b></td>
+                </tr>
+                <tr>
+                  <td>Own all 3</td><td><b>Dice × 14</b></td>
+                </tr>
+              </tbody>
+            </table>
           </>
         )}
 

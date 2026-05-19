@@ -98,6 +98,8 @@ export interface GameState {
   settings: GameSettings;
   hostId: string;
   gameStats: GameStats;
+  /** Per-game city name/flag overrides (populated when shuffleProperties is on) */
+  boardOverrides: Record<number, { name: string; flag?: string }>;
 }
 
 export interface CardEvent {
@@ -136,18 +138,20 @@ export interface GameSettings {
   evenBuild:            boolean;  // must build/sell houses evenly
   randomizeOrder:       boolean;  // shuffle player order at game start
   publicTrades:         boolean;  // all players can see pending trade offers
+  shuffleProperties:    boolean;  // randomize which cities appear where at game start
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
   startingCash:         2000,
   doubleRentOnMonopoly: true,
-  vacationCash:         false,
+  vacationCash:         true,
   auction:              false,
   noRentInJail:         false,
   mortgageEnabled:      true,
   evenBuild:            true,
   randomizeOrder:       true,
   publicTrades:         false,
+  shuffleProperties:    false,
 };
 
 export interface AuctionState {

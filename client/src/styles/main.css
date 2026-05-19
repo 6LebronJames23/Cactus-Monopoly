@@ -497,15 +497,15 @@ html, body, #root {
   background: var(--bg);
 }
 .side-panel {
-  width: 220px;
-  min-width: 190px;
+  width: 240px;
+  min-width: 200px;
   background: var(--bg2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
 }
-.side-panel--right { width: 260px; min-width: 220px; }
+.side-panel--right { width: 280px; min-width: 240px; }
 .side-content-pane {
   flex: 1;
   overflow-y: auto;
@@ -523,6 +523,9 @@ html, body, #root {
   overflow: auto;
   padding: 8px;
   min-width: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgba(99,102,241,0.05) 0%, transparent 70%),
+    var(--bg);
 }
 
 .panel-title {
@@ -1055,19 +1058,57 @@ html, body, #root {
   box-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
-/* Houses */
+/* Houses — colored rectangular pips */
 .bs__houses {
   position: absolute;
   z-index: 4;
   display: flex;
-  gap: 1px;
-  font-size: 7px;
+  gap: 2px;
   pointer-events: none;
+  align-items: center;
 }
-.bs__houses--bottom { top: var(--band); left: 50%; transform: translateX(-50%); }
-.bs__houses--top    { bottom: var(--band); left: 50%; transform: translateX(-50%); }
-.bs__houses--left   { right: var(--band); top: 50%; transform: translateY(-50%) rotate(90deg); }
-.bs__houses--right  { left: var(--band); top: 50%; transform: translateY(-50%) rotate(-90deg); }
+.bs__houses--bottom { top: calc(var(--band) + 2px); left: 50%; transform: translateX(-50%); }
+.bs__houses--top    { bottom: calc(var(--band) + 2px); left: 50%; transform: translateX(-50%); }
+.bs__houses--left   { right: calc(var(--band) + 2px); top: 50%; transform: translateY(-50%); flex-direction: column; }
+.bs__houses--right  { left: calc(var(--band) + 2px); top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+.bs__house-pip {
+  width: 8px;
+  height: 10px;
+  border-radius: 2px 2px 0 0;
+  background: var(--gc, #22c55e);
+  border: 1.5px solid rgba(255,255,255,0.45);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+.bs__hotel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 14px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  border-radius: 3px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.3);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+/* Vacation pot label inside corner */
+.bs__vacation-pot {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  color: #facc15;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
 
 /* Player tokens on board */
 .bs__tokens {
@@ -1875,11 +1916,13 @@ html, body, #root {
   .bs__name { font-size: 9.5px; max-width: 60px; }
   .bs__corner-icon { font-size: 32px; }
   .bs__corner-name { font-size: 10.5px; }
+  .bs__house-pip { width: 7px; height: 9px; }
+  .bs__hotel-badge { width: 16px; height: 12px; font-size: 7px; }
 }
 @media (max-width: 1400px) {
   :root { --sw: 52px; --sh: 80px; --cs: 96px; --band: 18px; }
-  .side-panel { width: 200px; min-width: 180px; }
-  .side-panel--right { width: 230px; min-width: 200px; }
+  .side-panel { width: 210px; min-width: 190px; }
+  .side-panel--right { width: 250px; min-width: 220px; }
   .bc__title { font-size: 15px; letter-spacing: 3px; }
   .bc__globe { font-size: 36px; }
   .die-face { width: 44px; height: 44px; padding: 6px; border-radius: 10px; }
@@ -1891,6 +1934,9 @@ html, body, #root {
   .bs__corner-name { font-size: 9.5px; }
   .bs__icon { font-size: 18px; }
   .bs__icon--flag { font-size: 22px; }
+  .bs__house-pip { width: 6px; height: 8px; }
+  .bs__hotel-badge { width: 13px; height: 11px; font-size: 6px; }
+  .bs__vacation-pot { font-size: 8px; }
 }
 @media (max-width: 1150px) {
   :root { --sw: 42px; --sh: 64px; --cs: 80px; --band: 13px; }
@@ -1904,4 +1950,7 @@ html, body, #root {
   .bs__price-pill { font-size: 6.5px; padding: 1px 4px; }
   .bs__corner-icon { font-size: 22px; }
   .bs__corner-name { font-size: 8px; }
+  .bs__house-pip { width: 5px; height: 6px; border-width: 1px; }
+  .bs__hotel-badge { width: 11px; height: 9px; font-size: 5px; }
+  .bs__vacation-pot { font-size: 7px; }
 }

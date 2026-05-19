@@ -83,6 +83,14 @@ export default function SettingsPanel({ settings, isHost }: Props) {
         onChange={v => update({ publicTrades: v })}
         isHost={isHost}
       />
+      <SettingRow
+        icon="🗺️"
+        label="Shuffle cities"
+        description="Randomly reassign city names to property slots each game"
+        value={settings.shuffleProperties}
+        onChange={v => update({ shuffleProperties: v })}
+        isHost={isHost}
+      />
 
       <div className="settings-row">
         <span className="settings-row__icon">💵</span>

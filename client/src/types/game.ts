@@ -91,6 +91,7 @@ export interface GameSettings {
   evenBuild:            boolean;
   randomizeOrder:       boolean;
   publicTrades:         boolean;
+  shuffleProperties:    boolean;
 }
 
 export interface AuctionState {
@@ -141,4 +142,5 @@ export interface GameState {
   settings: GameSettings;
   hostId: string;
   gameStats: GameStats;
+  boardOverrides: Record<number, { name: string; flag?: string }>;
 }

@@ -24,17 +24,21 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
     players.find(p => p.id === ownedProperties[index]?.ownerId);
 
   const renderSpace = (index: number, side: 'bottom' | 'top' | 'left' | 'right', isCorner: boolean) => {
-    const space = BOARD_SPACES[index];
+    const base = BOARD_SPACES[index];
+    const override = gameState.boardOverrides?.[index];
+    const space = override ? { ...base, ...override } : base;
+    const isCornerSpace = index === 0 || index === 15 || index === 30 || index === 45;
     return (
       <BoardSpaceCell
         key={`${side}-${index}`}
         space={space}
         side={side}
-        isCorner={index === 0 || index === 15 || index === 30 || index === 45}
+        isCorner={isCornerSpace}
         playersHere={getPlayersAt(index)}
         owner={getOwner(index)}
         owned={ownedProperties[index]}
         groupColor={space.group ? GROUP_COLORS[space.group] : undefined}
+        vacationPot={isCornerSpace && index === 30 ? gameState.vacationPot : undefined}
         onClick={() => onSpaceClick(space)}
       />
     );
