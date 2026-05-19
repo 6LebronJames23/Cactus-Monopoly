@@ -36,7 +36,7 @@ export default function Game({ gameState, myId }: Props) {
     if (!el) return;
     const obs = new ResizeObserver(() => {
       const w = el.clientWidth - 16;
-      const h = el.clientHeight - 68;
+      const h = el.clientHeight - 16;
       const fit = Math.min(w, h);
       setBoardScale(Math.min(1, fit / BOARD_PX));
     });
@@ -54,7 +54,6 @@ export default function Game({ gameState, myId }: Props) {
 
   useGameSounds(gameState.log, isMyTurn);
 
-  // Switch to trade tab automatically when a trade is pending and involves me
   const myTrade = gameState.pendingTrade &&
     (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId);
   useEffect(() => {
@@ -79,14 +78,106 @@ export default function Game({ gameState, myId }: Props) {
     }, 200);
   };
 
+  // Build the actions slot rendered inside the board center
+  const actionsSlot = (() => {
+    if (gameState.gamePhase === 'ended') {
+      const winner = gameState.players.find(p => !p.bankrupt);
+      return (
+        <div className="bc__ended-msg">
+          🏆 {winner?.token} <b>{winner?.name}</b> wins!
+        </div>
+      );
+    }
+
+    if (gameState.gamePhase !== 'playing') return null;
+
+    return (
+      <div className="bc__action-group">
+        {isMyTurn && me && !me.bankrupt ? (
+          <>
+            {/* JAIL controls */}
+            {turnPhase === 'roll' && me.inJail && (
+              <div className="bc__action-row">
+                <button className="bc__action-btn bc__action-btn--roll" onClick={handleRoll} disabled={isRolling}>
+                  🎲 Roll for doubles
+                </button>
+                {me.getOutOfJailCards > 0 && (
+                  <button className="bc__action-btn bc__action-btn--secondary" onClick={() => emit('use_jail_card')}>
+                    🃏 Use card
+                  </button>
+                )}
+                <button className="bc__action-btn bc__action-btn--secondary" onClick={() => emit('pay_jail_fine')}>
+                  💰 Pay $50
+                </button>
+              </div>
+            )}
+
+            {/* Normal roll */}
+            {turnPhase === 'roll' && !me.inJail && (
+              <button className="bc__action-btn bc__action-btn--roll" onClick={handleRoll} disabled={isRolling}>
+                {isRolling ? '🎲 Rolling…' : '🎲 Roll Dice'}
+              </button>
+            )}
+
+            {/* Buy decision */}
+            {turnPhase === 'buy_decision' && gameState.pendingBuySpaceIndex !== null && (() => {
+              const space = BOARD_SPACES[gameState.pendingBuySpaceIndex];
+              const canAfford = (me?.money ?? 0) >= (space.price ?? 0);
+              return (
+                <div className="bc__action-row">
+                  <button className="bc__action-btn bc__action-btn--end" onClick={() => emit('decline_buy')}>
+                    ✗ Pass
+                  </button>
+                  <button className="bc__action-btn bc__action-btn--buy" onClick={() => emit('buy_property')} disabled={!canAfford}>
+                    🏠 Buy {space.flag} {space.name} ${space.price}
+                    {!canAfford && <span className="bc__cant-afford"> — not enough!</span>}
+                  </button>
+                </div>
+              );
+            })()}
+
+            {/* End turn / Roll again */}
+            {turnPhase === 'done' && (() => {
+              const isDoublesRoll = dice && dice[0] === dice[1];
+              return (
+                <button className="bc__action-btn bc__action-btn--end" onClick={() => emit('end_turn')}>
+                  {isDoublesRoll ? '🎲 Roll Again →' : '✓ End Turn'}
+                </button>
+              );
+            })()}
+
+            {/* Card draw phase */}
+            {turnPhase === 'card' && (
+              <div className="bc__turn-label">Drawing card…</div>
+            )}
+          </>
+        ) : (
+          <div className="bc__waiting">
+            <span className="bc__waiting-dot" style={{ background: currentPlayer?.color }} />
+            Waiting for <b>{currentPlayer?.name}</b>…
+          </div>
+        )}
+
+        {me && !me.bankrupt && (
+          <button
+            className="bc__bankrupt-btn"
+            onClick={() => { if (confirm('Declare bankruptcy?')) emit('declare_bankruptcy'); }}
+          >
+            💸 Declare bankruptcy
+          </button>
+        )}
+      </div>
+    );
+  })();
+
   return (
     <div className="game-layout">
-      {/* LEFT: player cards + log */}
+      {/* LEFT: player cards */}
       <aside className="side-panel side-panel--left">
         <PlayerPanel gameState={gameState} myId={myId} onSelectSpace={setSelectedSpace} />
       </aside>
 
-      {/* CENTER: board + controls */}
+      {/* CENTER: board (actions embedded inside board center) */}
       <main className="board-area" ref={boardAreaRef}>
         <div
           className="board-scale-outer"
@@ -103,92 +194,9 @@ export default function Game({ gameState, myId }: Props) {
               isRolling={isRolling}
               onSpaceClick={setSelectedSpace}
               onRoll={isMyTurn && turnPhase === 'roll' && !isRolling && !me?.inJail ? handleRoll : undefined}
+              actionsSlot={actionsSlot}
+              recentLog={gameState.log.slice(0, 4)}
             />
-          </div>
-        </div>
-
-        {/* ── Action Bar ── */}
-        <div className="action-bar">
-          {gameState.gamePhase === 'playing' && isMyTurn && me && !me.bankrupt && (
-            <div className="action-bar__my-turn">
-              <span className="action-bar__label">Your turn</span>
-
-              {/* JAIL controls */}
-              {turnPhase === 'roll' && me.inJail && (
-                <div className="action-bar__group">
-                  <ActionBtn onClick={handleRoll} disabled={isRolling} variant="roll">
-                    🎲 Roll for doubles
-                  </ActionBtn>
-                  {me.getOutOfJailCards > 0 && (
-                    <ActionBtn onClick={() => emit('use_jail_card')} variant="secondary">
-                      🃏 Use card
-                    </ActionBtn>
-                  )}
-                  <ActionBtn onClick={() => emit('pay_jail_fine')} variant="secondary">
-                    💰 Pay $50
-                  </ActionBtn>
-                </div>
-              )}
-
-              {/* Normal roll */}
-              {turnPhase === 'roll' && !me.inJail && (
-                <ActionBtn onClick={handleRoll} disabled={isRolling} variant="roll">
-                  {isRolling ? '🎲 Rolling…' : '🎲 Roll Dice'}
-                </ActionBtn>
-              )}
-
-              {/* Buy decision */}
-              {turnPhase === 'buy_decision' && gameState.pendingBuySpaceIndex !== null && (() => {
-                const space = BOARD_SPACES[gameState.pendingBuySpaceIndex];
-                const canAfford = (me?.money ?? 0) >= (space.price ?? 0);
-                return (
-                  <div className="action-bar__group">
-                    <span className="action-bar__buy-info">
-                      Buy <b>{space.flag} {space.name}</b> for <b>${space.price}</b>?
-                      {!canAfford && (
-                        <span className="action-bar__cant-afford"> — Not enough money!</span>
-                      )}
-                    </span>
-                    <ActionBtn onClick={() => emit('buy_property')} variant="buy" disabled={!canAfford}>✓ Buy</ActionBtn>
-                    <ActionBtn onClick={() => emit('decline_buy')} variant="decline">✗ Pass</ActionBtn>
-                  </div>
-                );
-              })()}
-
-              {/* End turn / Roll Again on doubles */}
-              {turnPhase === 'done' && (() => {
-                const isDoublesRoll = dice && dice[0] === dice[1];
-                return (
-                  <ActionBtn onClick={() => emit('end_turn')} variant="end">
-                    {isDoublesRoll ? '🎲 Roll Again →' : 'End Turn →'}
-                  </ActionBtn>
-                );
-              })()}
-            </div>
-          )}
-
-          {gameState.gamePhase === 'playing' && !isMyTurn && (
-            <div className="action-bar__waiting">
-              <span className="action-bar__waiting-dot" style={{ background: currentPlayer?.color }} />
-              Waiting for <b>{currentPlayer?.name}</b>…
-            </div>
-          )}
-
-          {gameState.gamePhase === 'ended' && (
-            <div className="action-bar__winner">
-              🏆 {gameState.players.find(p => !p.bankrupt)?.name} wins the game!
-            </div>
-          )}
-
-          <div className="action-bar__right">
-            {me && !me.bankrupt && gameState.gamePhase === 'playing' && (
-              <button
-                className="btn-bankrupt"
-                onClick={() => { if (confirm('Declare bankruptcy?')) emit('declare_bankruptcy'); }}
-              >
-                💸
-              </button>
-            )}
           </div>
         </div>
       </main>
@@ -244,7 +252,7 @@ export default function Game({ gameState, myId }: Props) {
         )}
       </aside>
 
-      {/* ── Toast notifications ── */}
+      {/* Toasts */}
       <div className="toast-stack">
         {toasts.map(t => (
           <div key={t.id} className={`toast toast--${t.type}`}>{t.message}</div>
@@ -255,7 +263,7 @@ export default function Game({ gameState, myId }: Props) {
         <EndScreen gameState={gameState} myId={myId} onBack={() => setShowEndScreen(false)} />
       )}
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       {currentCard && isMyTurn && turnPhase === 'card' && (
         <CardModal card={currentCard} onOk={() => emit('resolve_card')} />
       )}
@@ -277,24 +285,5 @@ export default function Game({ gameState, myId }: Props) {
         <AuctionModal auction={gameState.pendingAuction} gameState={gameState} myId={myId} />
       )}
     </div>
-  );
-}
-
-function ActionBtn({
-  children, onClick, disabled, variant,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  variant: 'roll' | 'secondary' | 'buy' | 'decline' | 'end';
-}) {
-  return (
-    <button
-      className={`action-btn action-btn--${variant}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
   );
 }

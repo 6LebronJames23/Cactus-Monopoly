@@ -66,17 +66,24 @@ export default function BoardSpaceCell({
         ...(groupColor && !isCorner ? { '--gc': groupColor } as React.CSSProperties : {}),
       }}
     >
-      {/* Color band for property/airport/utility */}
+      {/* Color band */}
       {groupColor && !isCorner && (
         <div
           className={`bs__band bs__band--${side}`}
-          style={{ background: isMortgaged ? '#444' : groupColor }}
+          style={{ background: isMortgaged ? '#333' : groupColor }}
         />
       )}
 
-      {/* Owner badge */}
+      {/* Owner avatar — large, centered, absolute so it doesn't rotate with body */}
       {owner && !isCorner && (
-        <div className="bs__owner-badge" style={{ background: owner.color }} title={`Owned by ${owner.name}`}>
+        <div
+          className={`bs__owner-avatar ${isMortgaged ? 'bs__owner-avatar--mortgaged' : ''}`}
+          style={{
+            background: owner.color,
+            boxShadow: `0 0 0 2px ${owner.color}, 0 0 0 3.5px rgba(255,255,255,0.25), 0 3px 10px rgba(0,0,0,0.6)`,
+          }}
+          title={`Owned by ${owner.name}${isMortgaged ? ' (mortgaged)' : ''}`}
+        >
           {owner.token}
         </div>
       )}
@@ -92,22 +99,27 @@ export default function BoardSpaceCell({
         </div>
       )}
 
-      {/* Main content */}
+      {/* Main body — rotated for side columns */}
       <div className={`bs__body bs__body--${side}`}>
         {isCorner ? (
           <div className="bs__corner-content">
             <span className="bs__corner-icon">{spaceIcon}</span>
             <span className="bs__corner-name">{space.name}</span>
           </div>
+        ) : owner ? (
+          <>
+            <span className="bs__name bs__name--owned">{space.name}</span>
+            {isMortgaged && <span className="bs__mortgaged-label">MTG</span>}
+          </>
         ) : (
           <>
             <Flag
               emoji={spaceIcon}
-              size={space.type === 'property' ? 26 : 20}
+              size={space.type === 'property' ? 24 : 18}
               className={`bs__icon${space.type === 'property' || space.type === 'airport' || space.type === 'utility' ? ' bs__icon--flag' : ''}`}
             />
             <span className="bs__name">{space.name}</span>
-            {price && <span className="bs__price">{price}</span>}
+            {price && <span className="bs__price-pill">{price}</span>}
           </>
         )}
       </div>

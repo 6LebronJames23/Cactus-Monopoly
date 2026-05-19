@@ -27,7 +27,7 @@
   --sw: 72px;    /* space width  */
   --sh: 112px;   /* space height */
   --cs: 130px;   /* corner size  */
-  --band: 18px;  /* color band   */
+  --band: 22px;  /* color band   */
 
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -495,7 +495,6 @@ html, body, #root {
   justify-content: center;
   overflow: hidden;
   padding: 8px;
-  gap: 8px;
   min-width: 0;
 }
 
@@ -511,49 +510,93 @@ html, body, #root {
 }
 
 /* ══════════════════════════════════════════════
-   ACTION BAR
+   BOARD CENTER ACTIONS  (replaces bottom action bar)
    ══════════════════════════════════════════════ */
-.action-bar {
+.bc__action-group {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 10px;
   width: 100%;
-  max-width: 1000px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 14px;
-  padding: 10px 16px;
-  min-height: 58px;
-  flex-wrap: wrap;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
 }
-.action-bar__my-turn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; }
-.action-bar__label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--green);
-  white-space: nowrap;
-  background: rgba(34,197,94,0.08);
-  padding: 4px 10px;
-  border-radius: 99px;
-  border: 1px solid rgba(34,197,94,0.2);
-}
-.action-bar__group  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.action-bar__buy-info { font-size: 14px; color: var(--text2); }
-.action-bar__cant-afford { color: #f87171; font-weight: 600; }
-.action-bar__waiting {
+.bc__action-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.bc__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  border-radius: 99px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  font-family: var(--font);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.bc__action-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+
+.bc__action-btn--roll {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.bc__action-btn--roll:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 30px rgba(99,102,241,0.7), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.bc__action-btn--roll:active:not(:disabled) { transform: translateY(0); }
+
+.bc__action-btn--end {
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--text);
+}
+.bc__action-btn--end:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
+.bc__action-btn--buy {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(5,150,105,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.bc__action-btn--buy:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 24px rgba(5,150,105,0.65), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.bc__action-btn--secondary {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--text2);
+  padding: 10px 18px;
+  font-size: 13px;
+}
+.bc__action-btn--secondary:hover:not(:disabled) {
+  background: rgba(255,255,255,0.13);
+  color: var(--text);
+}
+
+.bc__waiting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 14px;
   color: var(--text2);
-  flex: 1;
+  padding: 6px 0;
 }
-.action-bar__waiting-dot {
-  width: 8px;
-  height: 8px;
+.bc__waiting-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
   animation: pulse 1.4s ease-in-out infinite;
@@ -562,21 +605,40 @@ html, body, #root {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.65); }
 }
-.action-bar__winner {
-  font-size: 17px;
+.bc__turn-label {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+}
+.bc__ended-msg {
+  font-size: 18px;
   font-weight: 800;
   color: var(--yellow);
-  flex: 1;
+  text-align: center;
   text-shadow: 0 0 24px rgba(250,204,21,0.5);
+  animation: winnerPulse 1.5s ease-in-out infinite;
 }
-.action-bar__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
+.bc__cant-afford {
+  font-size: 12px;
+  color: #fca5a5;
+  font-weight: 600;
 }
+.bc__bankrupt-btn {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.4;
+  padding: 4px 10px;
+  border-radius: 99px;
+  transition: opacity 0.15s, background 0.15s;
+  font-family: var(--font);
+  margin-top: 2px;
+}
+.bc__bankrupt-btn:hover { opacity: 1; background: rgba(239,68,68,0.12); }
 
-/* Action buttons */
+/* action-btn kept for property modal usage */
 .action-btn {
   padding: 9px 20px;
   border-radius: var(--radius);
@@ -590,46 +652,29 @@ html, body, #root {
   letter-spacing: 0.01em;
 }
 .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
 .action-btn--roll {
   background: linear-gradient(135deg, #166534, #14532d);
   border-color: rgba(34,197,94,0.4);
   color: #fff;
   box-shadow: 0 2px 14px rgba(22,101,52,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
-  font-size: 15px;
 }
-.action-btn--roll:hover:not(:disabled) {
-  box-shadow: 0 4px 24px rgba(34,197,94,0.45), inset 0 1px 0 rgba(255,255,255,0.1);
-  transform: translateY(-1px);
-}
-.action-btn--roll:active { transform: translateY(0); }
-
 .action-btn--end {
   background: linear-gradient(135deg, #3730a3, #312e81);
   border-color: rgba(99,102,241,0.4);
   color: #fff;
   box-shadow: 0 2px 14px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }
-.action-btn--end:hover:not(:disabled) {
-  box-shadow: 0 4px 20px rgba(99,102,241,0.45);
-  transform: translateY(-1px);
-}
-
 .action-btn--buy {
   background: rgba(34,197,94,0.1);
   border-color: rgba(34,197,94,0.35);
   color: var(--green);
 }
-.action-btn--buy:hover:not(:disabled) {
-  background: rgba(34,197,94,0.18);
-  box-shadow: 0 0 14px rgba(34,197,94,0.2);
-}
+.action-btn--buy:hover:not(:disabled) { background: rgba(34,197,94,0.18); }
 .action-btn--decline {
   background: rgba(239,68,68,0.08);
   border-color: rgba(239,68,68,0.3);
   color: var(--red);
 }
-.action-btn--decline:hover:not(:disabled) { background: rgba(239,68,68,0.15); }
 .action-btn--secondary {
   background: var(--bg3);
   border-color: var(--border2);
@@ -840,7 +885,7 @@ html, body, #root {
   border-radius: 2px;
 }
 
-/* Owner badge — shows player token */
+/* Owner badge — legacy, kept for safety */
 .bs__owner-badge {
   position: absolute;
   bottom: 3px;
@@ -861,6 +906,61 @@ html, body, #root {
 .bs:hover .bs__owner-badge {
   transform: scale(1.2);
   box-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* Owner avatar — large centered token, sits above the tile body */
+.bs__owner-avatar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  line-height: 1;
+  z-index: 6;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.bs__owner-avatar--mortgaged {
+  opacity: 0.4;
+  filter: grayscale(0.6);
+}
+.bs:hover .bs__owner-avatar {
+  transform: translate(-50%, -50%) scale(1.18);
+}
+
+/* Owned-state tile text */
+.bs__name--owned {
+  font-size: 7px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  color: rgba(255,255,255,0.45);
+  word-break: break-word;
+  max-width: 56px;
+  padding: 0 2px;
+}
+.bs__mortgaged-label {
+  font-size: 6.5px;
+  font-weight: 800;
+  color: rgba(239,68,68,0.7);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bs__price-pill {
+  font-size: 7px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.07);
+  border-radius: 99px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  margin-top: 1px;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 /* Houses */
@@ -965,29 +1065,51 @@ html, body, #root {
   letter-spacing: 7px;
   color: var(--text3);
 }
+.bc__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 2px;
+}
 .bc__dice-area {
-  margin: 10px 0 6px;
+  margin: 6px 0 4px;
   min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.bc__turn {
+.bc__actions {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  min-height: 22px;
+  justify-content: center;
+  margin: 2px 0;
 }
-.bc__turn-token { font-size: 20px; }
-.bc__turn-name  { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bc__winner {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--yellow);
+.bc__log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-width: 320px;
+  margin: 4px 0 0;
+  overflow: hidden;
+}
+.bc__log-entry {
+  font-size: 10px;
+  color: var(--text3);
   text-align: center;
-  animation: winnerPulse 1.5s ease-in-out infinite;
+  line-height: 1.4;
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+}
+.bc__log-entry--latest {
+  color: var(--text2);
+  background: rgba(255,255,255,0.05);
+  font-weight: 600;
 }
 @keyframes winnerPulse {
   0%, 100% { text-shadow: 0 0 12px rgba(250,204,21,0.4); }
@@ -1018,19 +1140,20 @@ html, body, #root {
   position: relative;
 }
 .die-face {
-  width: 58px;
-  height: 58px;
-  background: linear-gradient(145deg, #ffffff, #dde3ec);
-  border-radius: 13px;
+  width: 66px;
+  height: 66px;
+  background: linear-gradient(145deg, #ffffff, #d0d8e8);
+  border-radius: 15px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  padding: 8px;
+  padding: 9px;
   gap: 2px;
   box-shadow:
-    0 5px 14px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.9),
-    inset 0 -2px 0 rgba(0,0,0,0.12);
+    0 6px 20px rgba(0,0,0,0.65),
+    0 2px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -2px 0 rgba(0,0,0,0.15);
   transition: transform 0.08s;
   will-change: transform;
 }
@@ -1643,15 +1766,18 @@ html, body, #root {
   :root { --sw: 52px; --sh: 78px; --cs: 96px; --band: 11px; }
   .bc__title { font-size: 18px; letter-spacing: 4px; }
   .bc__globe { font-size: 44px; }
-  .die-face { width: 48px; height: 48px; padding: 7px; }
+  .die-face { width: 52px; height: 52px; padding: 7px; }
+  .bs__owner-avatar { width: 32px; height: 32px; font-size: 16px; }
 }
 @media (max-width: 1350px) {
   :root { --sw: 44px; --sh: 66px; --cs: 82px; --band: 10px; }
   .side-panel { width: 205px; min-width: 185px; }
   .bc__title { font-size: 15px; letter-spacing: 3px; }
   .bc__globe { font-size: 36px; }
-  .die-face { width: 42px; height: 42px; padding: 6px; border-radius: 10px; }
+  .die-face { width: 44px; height: 44px; padding: 6px; border-radius: 10px; }
   .bc__subtitle { font-size: 8px; letter-spacing: 5px; }
+  .bs__owner-avatar { width: 27px; height: 27px; font-size: 14px; }
+  .bs__name--owned { font-size: 6px; }
 }
 @media (max-width: 1100px) {
   :root { --sw: 37px; --sh: 54px; --cs: 70px; --band: 8px; }
@@ -1659,4 +1785,7 @@ html, body, #root {
   .bs__name { font-size: 5.5px; }
   .bc__title { font-size: 12px; letter-spacing: 2px; }
   .die-face { width: 36px; height: 36px; padding: 5px; border-radius: 8px; }
+  .bs__owner-avatar { width: 22px; height: 22px; font-size: 11px; }
+  .bs__name--owned { font-size: 5px; }
+  .bs__price-pill { font-size: 5.5px; padding: 1px 4px; }
 }
