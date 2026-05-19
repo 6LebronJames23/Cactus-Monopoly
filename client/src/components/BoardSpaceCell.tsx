@@ -100,9 +100,9 @@ export default function BoardSpaceCell({
       )}
 
       {/* Main body — rotated for side columns */}
-      <div className={`bs__body bs__body--${side}`}>
+      <div className={`bs__body bs__body--${side} bs__body--${space.type}`}>
         {isCorner ? (
-          <div className="bs__corner-content">
+          <div className={`bs__corner-content bs__corner-content--${space.type}`}>
             <span className="bs__corner-icon">{spaceIcon}</span>
             <span className="bs__corner-name">{space.name}</span>
           </div>
@@ -111,14 +111,18 @@ export default function BoardSpaceCell({
             <span className="bs__name bs__name--owned">{space.name}</span>
             {isMortgaged && <span className="bs__mortgaged-label">MTG</span>}
           </>
+        ) : (space.type === 'property' || space.type === 'airport' || space.type === 'utility') ? (
+          <>
+            <span className="bs__name bs__name--big">{space.name}</span>
+            <span className="bs__flag-badge">
+              <Flag emoji={spaceIcon} size={22} className="bs__flag-img" />
+            </span>
+            {price && <span className="bs__price-pill bs__price-pill--prominent">{price}</span>}
+          </>
         ) : (
           <>
-            <Flag
-              emoji={spaceIcon}
-              size={space.type === 'property' ? 24 : 18}
-              className={`bs__icon${space.type === 'property' || space.type === 'airport' || space.type === 'utility' ? ' bs__icon--flag' : ''}`}
-            />
-            <span className="bs__name">{space.name}</span>
+            <span className="bs__icon bs__icon--special">{spaceIcon}</span>
+            <span className="bs__name bs__name--special">{space.name}</span>
             {price && <span className="bs__price-pill">{price}</span>}
           </>
         )}
