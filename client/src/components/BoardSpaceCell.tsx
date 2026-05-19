@@ -100,7 +100,7 @@ export default function BoardSpaceCell({
           </div>
         ) : (
           <>
-            <span className="bs__icon">{spaceIcon}</span>
+            <span className={`bs__icon${space.type === 'property' || space.type === 'airport' || space.type === 'utility' ? ' bs__icon--flag' : ''}`}>{spaceIcon}</span>
             <span className="bs__name">{space.name}</span>
             {price && <span className="bs__price">{price}</span>}
           </>

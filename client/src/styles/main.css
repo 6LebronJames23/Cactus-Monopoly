@@ -684,6 +684,7 @@ html, body, #root {
   left: 0;
   width: 1136px;
   height: 1136px;
+  will-change: transform;
 }
 
 .board {
@@ -764,6 +765,7 @@ html, body, #root {
 .bs__body--right { transform: rotate(-90deg); }
 
 .bs__icon  { font-size: 20px; line-height: 1; }
+.bs__icon--flag { font-size: 24px; }
 .bs__name  {
   font-size: 8.5px;
   font-weight: 800;
@@ -1190,21 +1192,22 @@ html, body, #root {
    ══════════════════════════════════════════════ */
 .toast-stack {
   position: fixed;
-  bottom: 80px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 8px;
-  z-index: 200;
+  z-index: 9999;
   pointer-events: none;
-  width: 380px;
-  max-width: 90vw;
+  width: 420px;
+  max-width: 92vw;
+  align-items: center;
 }
 .toast {
-  padding: 13px 20px;
+  padding: 16px 28px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.45;
   text-align: center;
@@ -1214,11 +1217,11 @@ html, body, #root {
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.94); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.80); }
+  to   { opacity: 1; transform: scale(1); }
 }
 @keyframes toastOut {
-  to { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  to { opacity: 0; transform: scale(0.85); }
 }
 .toast--info    { background: rgba(22,27,39,0.95);  border-color: var(--border2);             color: var(--text); }
 .toast--success { background: rgba(6,25,14,0.95);   border-color: rgba(34,197,94,0.3);        color: var(--green); }

@@ -888,6 +888,26 @@ export class GameRoom {
     return null;
   }
 
+  rejoinPlayer(newSocketId: string, playerName: string): { ok: boolean; error?: string; state?: GameState; myId?: string } {
+    if (this.state.gamePhase !== 'playing') return { ok: false, error: 'Game is not in progress' };
+    const player = this.state.players.find(p => p.name === playerName && !p.bankrupt);
+    if (!player) return { ok: false, error: 'Player not found in this game' };
+
+    const oldId = player.id;
+
+    // Cancel any pending disconnect timer
+    const timer = this.disconnectTimers.get(oldId);
+    if (timer) { clearTimeout(timer); this.disconnectTimers.delete(oldId); }
+
+    // Reassign socket ID
+    player.id = newSocketId;
+    if (this.state.hostId === oldId) this.state.hostId = newSocketId;
+
+    this.addLog(`🔄 ${player.name} reconnected!`);
+    this.broadcast();
+    return { ok: true, state: this.state, myId: newSocketId };
+  }
+
   broadcast() {
     this.io.to(this.state.roomId).emit('game_state', this.state);
   }

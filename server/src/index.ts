@@ -51,6 +51,18 @@ io.on('connection', (socket) => {
     room.broadcast();
   });
 
+  socket.on('rejoin_room', ({ roomId, playerName }: { roomId: string; playerName: string }, cb) => {
+    const room = rooms.get(roomId.toUpperCase());
+    if (!room) return cb({ ok: false, error: 'Room not found' });
+    const result = room.rejoinPlayer(socket.id, playerName);
+    if (result.ok) {
+      socket.join(roomId.toUpperCase());
+      (socket as any).roomId = roomId.toUpperCase();
+      (socket as any).playerName = playerName;
+    }
+    cb(result);
+  });
+
   socket.on('kick_player', ({ targetId }: { targetId: string }, cb) => {
     const room = rooms.get((socket as any).roomId);
     if (!room) return cb?.({ ok: false, error: 'Room not found' });

@@ -4,6 +4,7 @@ import { socket } from '../socket';
 import { BOARD_SPACES } from '../data/board';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
 import { useToasts } from '../hooks/useToasts';
+import { useGameSounds } from '../hooks/useGameSounds';
 import Board from './Board';
 import PlayerPanel from './PlayerPanel';
 import GameLog from './GameLog';
@@ -44,6 +45,7 @@ export default function Game({ gameState, myId }: Props) {
 
   const { visualPositions } = usePlayerMovement(gameState.players);
   const toasts = useToasts(gameState.log);
+  useGameSounds(gameState.log);
 
   const me = gameState.players.find(p => p.id === myId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];

@@ -6,6 +6,21 @@ import Game from './components/Game';
 
 type Screen = 'home' | 'lobby' | 'game';
 
+const SESSION_KEY = 'mw_session';
+
+function saveSession(roomId: string, playerName: string) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ roomId, playerName }));
+}
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+function loadSession(): { roomId: string; playerName: string } | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [playerName, setPlayerName] = useState('');
@@ -15,20 +30,44 @@ export default function App() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    socket.on('connect', () => setMyId(socket.id!));
+    socket.on('connect', () => {
+      setMyId(socket.id!);
+
+      // Auto-rejoin if there's a saved session
+      const session = loadSession();
+      if (session) {
+        socket.emit('rejoin_room', session, (res: any) => {
+          if (res.ok && res.state) {
+            setRoomId(session.roomId);
+            setGameState(res.state);
+            setMyId(res.myId ?? socket.id!);
+            setScreen(res.state.gamePhase === 'playing' ? 'game' : 'lobby');
+          }
+          // If rejoin fails it's fine — just stay on home screen
+        });
+      }
+    });
+
     socket.on('game_state', (state: GameState) => {
       setGameState(state);
       if (state.gamePhase === 'playing' || state.gamePhase === 'ended') {
         setScreen('game');
       }
     });
+
     socket.on('kicked', () => {
       socket.disconnect();
+      clearSession();
       setScreen('home');
       setGameState(null);
       setError('You were kicked from the room.');
     });
-    return () => { socket.off('connect'); socket.off('game_state'); socket.off('kicked'); };
+
+    return () => {
+      socket.off('connect');
+      socket.off('game_state');
+      socket.off('kicked');
+    };
   }, []);
 
   const handleCreate = (name: string) => {
@@ -40,6 +79,7 @@ export default function App() {
           setRoomId(res.roomId);
           setGameState(res.state);
           setScreen('lobby');
+          saveSession(res.roomId, name);
         } else {
           setError(res.error);
         }
@@ -56,6 +96,7 @@ export default function App() {
           setRoomId(room.toUpperCase());
           setGameState(res.state);
           setScreen('lobby');
+          saveSession(room.toUpperCase(), name);
         } else {
           setError(res.error);
           socket.disconnect();
@@ -85,6 +126,12 @@ function HomeScreen({ onCreate, onJoin, error, setError }: {
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [tab, setTab] = useState<'create' | 'join'>('create');
+
+  // Pre-fill name from saved session
+  useEffect(() => {
+    const session = loadSession();
+    if (session?.playerName) setName(session.playerName);
+  }, []);
 
   const submit = () => {
     if (!name.trim()) { setError('Enter your name'); return; }
