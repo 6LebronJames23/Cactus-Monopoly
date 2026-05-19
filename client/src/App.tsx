@@ -42,8 +42,10 @@ export default function App() {
             setGameState(res.state);
             setMyId(res.myId ?? socket.id!);
             setScreen(res.state.gamePhase === 'playing' ? 'game' : 'lobby');
+          } else {
+            // Room gone (server restart, game ended, etc.) — clear stale session
+            clearSession();
           }
-          // If rejoin fails it's fine — just stay on home screen
         });
       }
     });
@@ -63,6 +65,11 @@ export default function App() {
       setError('You were kicked from the room.');
     });
 
+    // If there's a saved session, connect immediately so the handler above can rejoin
+    if (loadSession()) {
+      socket.connect();
+    }
+
     return () => {
       socket.off('connect');
       socket.off('game_state');
@@ -72,8 +79,9 @@ export default function App() {
 
   const handleCreate = (name: string) => {
     setPlayerName(name);
-    socket.connect();
-    socket.once('connect', () => {
+    // Clear old session so the connect handler doesn't try to rejoin a stale game
+    clearSession();
+    const doCreate = () => {
       socket.emit('create_room', { name }, (res: any) => {
         if (res.ok) {
           setRoomId(res.roomId);
@@ -84,13 +92,20 @@ export default function App() {
           setError(res.error);
         }
       });
-    });
+    };
+    if (socket.connected) {
+      doCreate();
+    } else {
+      socket.connect();
+      socket.once('connect', doCreate);
+    }
   };
 
   const handleJoin = (name: string, room: string) => {
     setPlayerName(name);
-    socket.connect();
-    socket.once('connect', () => {
+    // Clear old session so the connect handler doesn't try to rejoin a stale game
+    clearSession();
+    const doJoin = () => {
       socket.emit('join_room', { name, roomId: room.toUpperCase() }, (res: any) => {
         if (res.ok) {
           setRoomId(room.toUpperCase());
@@ -102,7 +117,13 @@ export default function App() {
           socket.disconnect();
         }
       });
-    });
+    };
+    if (socket.connected) {
+      doJoin();
+    } else {
+      socket.connect();
+      socket.once('connect', doJoin);
+    }
   };
 
   if (screen === 'home') {

@@ -54,12 +54,28 @@ io.on('connection', (socket) => {
   socket.on('rejoin_room', ({ roomId, playerName }: { roomId: string; playerName: string }, cb) => {
     const room = rooms.get(roomId.toUpperCase());
     if (!room) return cb({ ok: false, error: 'Room not found' });
+
+    // Try in-game rejoin first
     const result = room.rejoinPlayer(socket.id, playerName);
     if (result.ok) {
       socket.join(roomId.toUpperCase());
       (socket as any).roomId = roomId.toUpperCase();
       (socket as any).playerName = playerName;
+      return cb(result);
     }
+
+    // Fallback: if game is still in lobby, re-add the player (they were removed on disconnect)
+    if (room.state.gamePhase === 'lobby') {
+      const ok = room.addPlayer(socket.id, playerName);
+      if (ok) {
+        socket.join(roomId.toUpperCase());
+        (socket as any).roomId = roomId.toUpperCase();
+        (socket as any).playerName = playerName;
+        room.broadcast();
+        return cb({ ok: true, state: room.state, myId: socket.id });
+      }
+    }
+
     cb(result);
   });
 
