@@ -56,6 +56,7 @@ export interface Player {
   getOutOfJailCards: number;
   bankrupt: boolean;
   isReady: boolean;
+  isBot?: boolean;
 }
 
 export type GamePhase = 'lobby' | 'playing' | 'ended';

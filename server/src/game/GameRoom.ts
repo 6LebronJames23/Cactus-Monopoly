@@ -15,6 +15,7 @@ const PLAYER_TOKENS = ['🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','�
 const MAX_PLAYERS = 9;
 const JAIL_FINE = 50;
 const MAX_JAIL_TURNS = 3;
+const BOT_NAMES = ['Maxwell', 'Victoria', 'Atlas', 'Zara', 'Neo', 'Luna', 'Kai', 'Iris'];
 
 function rollDie(): number { return Math.floor(Math.random() * 6) + 1; }
 
@@ -23,6 +24,9 @@ export class GameRoom {
   private deck: CardDeck;
   private io: Server;
   private disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private botActionTimer: ReturnType<typeof setTimeout> | null = null;
+  private botAuctionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private botTradeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(io: Server, roomId: string, hostId: string, hostName: string) {
     this.io = io;
@@ -65,6 +69,7 @@ export class GameRoom {
       getOutOfJailCards: 0,
       bankrupt: false,
       isReady: false,
+      isBot: false,
     });
     return true;
   }
@@ -92,6 +97,45 @@ export class GameRoom {
       }
       this.broadcast();
     }
+  }
+
+  addBot(requesterId: string): string | null {
+    if (requesterId !== this.state.hostId) return 'Only the host can add bots';
+    if (this.state.gamePhase !== 'lobby') return 'Cannot add bots after game starts';
+    if (this.state.players.length >= MAX_PLAYERS) return 'Room is full';
+
+    const usedNames = new Set(this.state.players.map(p => p.name));
+    const available = BOT_NAMES.filter(n => !usedNames.has(n));
+    if (!available.length) return 'No more bot names available';
+
+    const botId = `bot_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const ok = this.addPlayer(botId, available[0]);
+    if (!ok) return 'Failed to add bot';
+
+    const bot = this.state.players.find(p => p.id === botId)!;
+    bot.isBot = true;
+    bot.isReady = true;
+
+    this.broadcast();
+    return null;
+  }
+
+  removeBot(requesterId: string, botId: string): string | null {
+    if (requesterId !== this.state.hostId) return 'Only the host can remove bots';
+    if (this.state.gamePhase !== 'lobby') return 'Cannot remove bots after game starts';
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot?.isBot) return 'Not a bot';
+
+    const idx = this.state.players.findIndex(p => p.id === botId);
+    this.state.players.splice(idx, 1);
+    // Re-assign colors & tokens after removal
+    this.state.players.forEach((p, i) => {
+      p.color = PLAYER_COLORS[i];
+      p.token = PLAYER_TOKENS[i];
+    });
+
+    this.broadcast();
+    return null;
   }
 
   kickPlayer(requesterId: string, targetId: string): string | null {
@@ -912,5 +956,154 @@ export class GameRoom {
 
   broadcast() {
     this.io.to(this.state.roomId).emit('game_state', this.state);
+    if (this.state.gamePhase === 'ended') {
+      this.clearBotTimers();
+      return;
+    }
+    this.scheduleBotAction();
+    this.scheduleBotAuctions();
+    this.scheduleBotTradeResponse();
+  }
+
+  // ── Bot AI ───────────────────────────────────────────────────────────────
+
+  private clearBotTimers() {
+    if (this.botActionTimer) { clearTimeout(this.botActionTimer); this.botActionTimer = null; }
+    this.botAuctionTimers.forEach(t => clearTimeout(t));
+    this.botAuctionTimers.clear();
+    if (this.botTradeTimer) { clearTimeout(this.botTradeTimer); this.botTradeTimer = null; }
+  }
+
+  private scheduleBotAction() {
+    if (this.botActionTimer) { clearTimeout(this.botActionTimer); this.botActionTimer = null; }
+    if (this.state.gamePhase !== 'playing') return;
+
+    const cp = this.currentPlayer();
+    if (!cp.isBot || cp.bankrupt) return;
+
+    const phase = this.state.turnPhase;
+    const botId = cp.id;
+
+    if (phase === 'roll') {
+      // In jail: prefer using card, then paying fine on later turns, then just rolling
+      if (cp.inJail) {
+        if (cp.getOutOfJailCards > 0) {
+          this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.useJailCard(botId); }, 1200);
+          return;
+        }
+        if (cp.money >= JAIL_FINE && cp.jailTurns >= 1) {
+          this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.payJailFine(botId); }, 1200);
+          return;
+        }
+      }
+      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.rollDice(botId); }, 1500);
+
+    } else if (phase === 'buy_decision') {
+      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.botBuyDecision(botId); }, 1000);
+
+    } else if (phase === 'card') {
+      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.resolveCard(botId); }, 900);
+
+    } else if (phase === 'done') {
+      this.botActionTimer = setTimeout(() => {
+        this.botActionTimer = null;
+        this.botBuildHouses(botId);
+        this.endTurn(botId);
+      }, 900);
+    }
+  }
+
+  private botBuyDecision(botId: string) {
+    if (this.state.turnPhase !== 'buy_decision') return;
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot) return;
+    const si = this.state.pendingBuySpaceIndex;
+    if (si === null) return;
+    const space = BOARD_SPACES[si];
+    const price = space.price ?? 0;
+
+    // Be more aggressive when buying completes a monopoly or pairs with an owned property
+    const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
+    const willCompleteMonopoly = groupSpaces.length > 0 &&
+      groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === botId);
+    const hasGroupMember = groupSpaces.some(i =>
+      i !== si && this.state.ownedProperties[i]?.ownerId === botId);
+
+    const minBuffer = willCompleteMonopoly ? 1.0 : hasGroupMember ? 1.2 : 1.5;
+    if (bot.money >= price * minBuffer) {
+      this.buyProperty(botId);
+    } else {
+      this.declineBuy(botId);
+    }
+  }
+
+  private botBuildHouses(botId: string) {
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot) return;
+    const BUFFER = 350;
+    let keepBuilding = true;
+    let safety = 0;
+    while (keepBuilding && safety < 30) {
+      keepBuilding = false;
+      safety++;
+      for (const si of [...bot.properties]) {
+        const space = BOARD_SPACES[si];
+        if (space.type !== 'property') continue;
+        const owned = this.state.ownedProperties[si];
+        if (!owned || owned.mortgaged || owned.houses >= 5) continue;
+        const groupSpaces = getGroupSpaces(space.group!);
+        const ownsAll = groupSpaces.every(i => this.state.ownedProperties[i]?.ownerId === botId);
+        if (!ownsAll) continue;
+        if (bot.money - (space.houseCost ?? 0) < BUFFER) continue;
+        const err = this.buyHouse(botId, si);
+        if (!err) { keepBuilding = true; break; } // break to re-check even-building
+      }
+    }
+  }
+
+  private scheduleBotAuctions() {
+    if (!this.state.pendingAuction) {
+      this.botAuctionTimers.forEach(t => clearTimeout(t));
+      this.botAuctionTimers.clear();
+      return;
+    }
+    const auction = this.state.pendingAuction;
+
+    this.state.players.forEach(bot => {
+      if (!bot.isBot || bot.bankrupt) return;
+      if (auction.passedPlayers.includes(bot.id)) return;
+      if (auction.highestBidderId === bot.id) return; // already winning
+      if (this.botAuctionTimers.has(bot.id)) return;  // already scheduled
+
+      const t = setTimeout(() => {
+        this.botAuctionTimers.delete(bot.id);
+        if (!this.state.pendingAuction) return;
+        const space = BOARD_SPACES[this.state.pendingAuction.spaceIndex];
+        const price = space.price ?? 100;
+        const maxBid = Math.floor(price * 0.75);
+        const currentHigh = this.state.pendingAuction.highestBid;
+        const nextBid = Math.max(currentHigh + 10, Math.floor(price * 0.3));
+        if (nextBid > maxBid || bot.money < nextBid) {
+          this.passAuction(bot.id);
+        } else {
+          this.placeBid(bot.id, nextBid);
+        }
+      }, 1200 + Math.random() * 800);
+
+      this.botAuctionTimers.set(bot.id, t);
+    });
+  }
+
+  private scheduleBotTradeResponse() {
+    if (!this.state.pendingTrade) return;
+    const trade = this.state.pendingTrade;
+    const bot = this.state.players.find(p => p.id === trade.toId);
+    if (!bot?.isBot) return;
+    if (this.botTradeTimer) clearTimeout(this.botTradeTimer);
+    this.botTradeTimer = setTimeout(() => {
+      this.botTradeTimer = null;
+      if (!this.state.pendingTrade || this.state.pendingTrade.id !== trade.id) return;
+      this.declineTrade(bot.id, trade.id);
+    }, 1500);
   }
 }

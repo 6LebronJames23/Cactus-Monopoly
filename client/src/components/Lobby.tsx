@@ -37,6 +37,18 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
     });
   };
 
+  const addBot = () => {
+    socket.emit('add_bot', {}, (res: any) => {
+      if (!res.ok) alert(res.error);
+    });
+  };
+
+  const removeBot = (botId: string) => {
+    socket.emit('remove_bot', { botId }, (res: any) => {
+      if (!res.ok) alert(res.error);
+    });
+  };
+
   return (
     <div className="lobby-screen">
       <div className="lobby-layout">
@@ -65,13 +77,17 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
                 <span className="player-name-lg">
                   {p.name}
                   {p.id === gameState.hostId && <span style={{ marginLeft: 6, fontSize: 13 }}>👑</span>}
+                  {p.isBot && <span style={{ marginLeft: 6, fontSize: 13 }}>🤖</span>}
                   {p.id === myId && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>YOU</span>}
                 </span>
-                <span className={`ready-badge ${p.isReady || p.id === gameState.hostId ? 'ready' : 'not-ready'}`}>
-                  {p.id === gameState.hostId ? 'host' : p.isReady ? '✓ Ready' : 'Not ready'}
+                <span className={`ready-badge ${p.isReady || p.id === gameState.hostId || p.isBot ? 'ready' : 'not-ready'}`}>
+                  {p.id === gameState.hostId ? 'host' : p.isBot ? '🤖 Bot' : p.isReady ? '✓ Ready' : 'Not ready'}
                 </span>
-                {isHost && p.id !== myId && (
+                {isHost && p.id !== myId && !p.isBot && (
                   <button className="btn-kick" onClick={() => kickPlayer(p.id)} title="Kick player">✕</button>
+                )}
+                {isHost && p.isBot && (
+                  <button className="btn-kick" onClick={() => removeBot(p.id)} title="Remove bot">✕</button>
                 )}
               </div>
             ))}
@@ -93,6 +109,11 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
             )}
             {isHost && (
               <>
+                {isHost && gameState.players.length < 9 && (
+                  <button className="btn-secondary" onClick={addBot} style={{ marginRight: 8 }}>
+                    🤖 Add Bot
+                  </button>
+                )}
                 <button
                   className="btn-primary"
                   onClick={startGame}

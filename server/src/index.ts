@@ -79,6 +79,20 @@ io.on('connection', (socket) => {
     cb(result);
   });
 
+  socket.on('add_bot', (_data, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.addBot(socket.id);
+    cb?.({ ok: !err, error: err });
+  });
+
+  socket.on('remove_bot', ({ botId }: { botId: string }, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.removeBot(socket.id, botId);
+    cb?.({ ok: !err, error: err });
+  });
+
   socket.on('kick_player', ({ targetId }: { targetId: string }, cb) => {
     const room = rooms.get((socket as any).roomId);
     if (!room) return cb?.({ ok: false, error: 'Room not found' });
