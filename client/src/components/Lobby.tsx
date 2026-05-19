@@ -3,19 +3,28 @@ import { socket } from '../socket';
 import { GameState } from '../types/game';
 import SettingsPanel from './SettingsPanel';
 
+const ALL_TOKENS = ['🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','🎸'];
+
 interface Props {
   gameState: GameState;
   myId: string;
   roomId: string;
+  onLeave: () => void;
 }
 
-export default function Lobby({ gameState, myId, roomId }: Props) {
+export default function Lobby({ gameState, myId, roomId, onLeave }: Props) {
   const [copied, setCopied] = useState(false);
+  const [showTokenPicker, setShowTokenPicker] = useState(false);
+
   const isHost = gameState.hostId === myId;
   const me = gameState.players.find(p => p.id === myId);
   const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
   const allReady = nonHostPlayers.length === 0 || nonHostPlayers.every(p => p.isReady);
   const notReadyNames = nonHostPlayers.filter(p => !p.isReady).map(p => p.name);
+
+  const takenTokens = new Set(
+    gameState.players.filter(p => p.id !== myId).map(p => p.token)
+  );
 
   const copyCode = () => {
     navigator.clipboard.writeText(roomId);
@@ -49,6 +58,14 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
     });
   };
 
+  const pickToken = (token: string) => {
+    if (takenTokens.has(token)) return;
+    socket.emit('choose_token', { token }, (res: any) => {
+      if (!res.ok) alert(res.error);
+    });
+    setShowTokenPicker(false);
+  };
+
   return (
     <div className="lobby-screen">
       <div className="lobby-layout">
@@ -73,7 +90,19 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
           <div className="player-list">
             {gameState.players.map(p => (
               <div key={p.id} className="player-row" style={{ borderLeftColor: p.color }}>
-                <span className="player-token-lg">{p.token}</span>
+                {/* Token — clickable for own row */}
+                {p.id === myId && !p.isBot ? (
+                  <button
+                    className="player-token-lg player-token-lg--pick"
+                    onClick={() => setShowTokenPicker(v => !v)}
+                    title="Change token"
+                  >
+                    {p.token}
+                    <span className="token-pick-hint">✏️</span>
+                  </button>
+                ) : (
+                  <span className="player-token-lg">{p.token}</span>
+                )}
                 <span className="player-name-lg">
                   {p.name}
                   {p.id === gameState.hostId && <span style={{ marginLeft: 6, fontSize: 13 }}>👑</span>}
@@ -98,6 +127,30 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
             )}
           </div>
 
+          {/* Token picker */}
+          {showTokenPicker && (
+            <div className="token-picker">
+              <div className="token-picker__label">Choose your token</div>
+              <div className="token-picker__grid">
+                {ALL_TOKENS.map(tok => {
+                  const isTaken = takenTokens.has(tok);
+                  const isMine = me?.token === tok;
+                  return (
+                    <button
+                      key={tok}
+                      className={`token-option ${isMine ? 'token-option--active' : ''} ${isTaken ? 'token-option--taken' : ''}`}
+                      onClick={() => pickToken(tok)}
+                      disabled={isTaken}
+                      title={isTaken ? 'Taken' : tok}
+                    >
+                      {tok}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="lobby-actions">
             {!isHost && (
               <button
@@ -109,7 +162,7 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
             )}
             {isHost && (
               <>
-                {isHost && gameState.players.length < 9 && (
+                {gameState.players.length < 9 && (
                   <button className="btn-secondary" onClick={addBot} style={{ marginRight: 8 }}>
                     🤖 Add Bot
                   </button>
@@ -129,6 +182,9 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
                 )}
               </>
             )}
+            <button className="btn-leave" onClick={onLeave}>
+              ← Leave
+            </button>
           </div>
         </div>
 

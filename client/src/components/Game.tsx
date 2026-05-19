@@ -19,9 +19,10 @@ const BOARD_PX = 1372;
 interface Props {
   gameState: GameState;
   myId: string;
+  onLeave: () => void;
 }
 
-export default function Game({ gameState, myId }: Props) {
+export default function Game({ gameState, myId, onLeave }: Props) {
   const [selectedSpace, setSelectedSpace] = useState<BoardSpace | null>(null);
   const [showTrade, setShowTrade] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
@@ -88,7 +89,7 @@ export default function Game({ gameState, myId }: Props) {
 
   // Auto-selected right panel content (priority order)
   const showAuctionPanel = !!gameState.pendingAuction;
-  const showCardPanel = !!currentCard && isMyTurn && turnPhase === 'card';
+  const showCardPanel = !!currentCard && !showAuctionPanel;
   const showTradePanel = !!myTrade || (userTab === 'trade' && !showAuctionPanel && !showCardPanel);
   const showLogPanel = !showAuctionPanel && !showCardPanel && !showTradePanel;
 
@@ -178,10 +179,6 @@ export default function Game({ gameState, myId }: Props) {
               );
             })()}
 
-            {/* Card draw phase */}
-            {turnPhase === 'card' && (
-              <div className="bc__turn-label">Drawing card…</div>
-            )}
           </>
         ) : (
           <div className="bc__waiting">
@@ -198,6 +195,9 @@ export default function Game({ gameState, myId }: Props) {
             💸 Declare bankruptcy
           </button>
         )}
+        <button className="bc__leave-btn" onClick={() => { if (confirm('Leave the game?')) onLeave(); }}>
+          ← Leave
+        </button>
       </div>
     );
   })();
@@ -277,7 +277,7 @@ export default function Game({ gameState, myId }: Props) {
 
         {showCardPanel && (
           <div className="side-content-pane">
-            <CardModal card={currentCard!} onOk={() => emit('resolve_card')} inline />
+            <CardModal card={currentCard!} inline />
           </div>
         )}
 

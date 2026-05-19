@@ -144,4 +144,5 @@ export interface GameState {
   hostId: string;
   gameStats: GameStats;
   boardOverrides: Record<number, { name: string; flag?: string }>;
+  visitCounts: Record<number, number>;
 }

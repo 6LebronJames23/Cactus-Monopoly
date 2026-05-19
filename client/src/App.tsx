@@ -126,14 +126,23 @@ export default function App() {
     }
   };
 
+  const handleLeave = () => {
+    socket.disconnect();
+    clearSession();
+    setScreen('home');
+    setGameState(null);
+    setMyId('');
+    setError('');
+  };
+
   if (screen === 'home') {
     return <HomeScreen onCreate={handleCreate} onJoin={handleJoin} error={error} setError={setError} />;
   }
   if (screen === 'lobby' && gameState) {
-    return <Lobby gameState={gameState} myId={myId} roomId={roomId} />;
+    return <Lobby gameState={gameState} myId={myId} roomId={roomId} onLeave={handleLeave} />;
   }
   if (screen === 'game' && gameState) {
-    return <Game gameState={gameState} myId={myId} />;
+    return <Game gameState={gameState} myId={myId} onLeave={handleLeave} />;
   }
   return null;
 }

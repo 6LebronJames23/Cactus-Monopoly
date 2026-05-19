@@ -273,7 +273,21 @@ html, body, #root {
 .ready-badge.not-ready { background: rgba(71,85,105,0.2); color: var(--text3); border: 1px solid transparent; }
 
 .waiting-msg { font-size: 13px; color: var(--text2); text-align: center; }
-.lobby-actions { display: flex; gap: 10px; }
+.lobby-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn-leave {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+  margin-left: auto;
+}
+.btn-leave:hover { color: var(--text); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); }
 
 /* ── Lobby two-column layout ── */
 .lobby-layout {
@@ -725,6 +739,20 @@ html, body, #root {
   margin-top: 2px;
 }
 .bc__bankrupt-btn:hover { opacity: 1; background: rgba(239,68,68,0.12); }
+.bc__leave-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 4px 10px;
+  border-radius: 99px;
+  transition: opacity 0.15s, background 0.15s;
+  font-family: var(--font);
+  margin-top: 2px;
+}
+.bc__leave-btn:hover { opacity: 1; background: rgba(255,255,255,0.06); }
 
 /* action-btn kept for property modal usage */
 .action-btn {
@@ -1392,6 +1420,13 @@ html, body, #root {
 /* ══════════════════════════════════════════════
    PLAYER PANEL
    ══════════════════════════════════════════════ */
+.player-panel-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
 .player-panel {
   display: flex;
   flex-direction: column;
@@ -1399,6 +1434,15 @@ html, body, #root {
   padding: 6px;
   gap: 5px;
   flex: 1;
+  min-height: 0;
+}
+.stats-section {
+  flex-shrink: 0;
+  padding: 6px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .player-card {
   background: var(--bg3);
@@ -1998,4 +2042,124 @@ html, body, #root {
   .bs__house-pip { width: 5px; height: 6px; border-width: 1px; }
   .bs__hotel-badge { width: 11px; height: 9px; font-size: 5px; }
   .bs__vacation-pot { font-size: 7px; }
+}
+
+/* ══ Token Picker ══════════════════════════════ */
+.player-token-lg--pick {
+  background: none;
+  border: 1.5px dashed var(--border2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 28px;
+  padding: 2px 4px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.player-token-lg--pick:hover { border-color: var(--accent2); }
+.token-pick-hint {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  background: var(--bg3);
+  border-radius: 50%;
+  line-height: 1;
+  padding: 1px;
+}
+.token-picker {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+.token-picker__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.token-picker__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.token-option {
+  font-size: 26px;
+  padding: 6px 8px;
+  background: var(--bg4);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.token-option:hover:not(:disabled) {
+  border-color: var(--accent2);
+  background: var(--bg3);
+  transform: scale(1.1);
+}
+.token-option--active {
+  border-color: var(--accent) !important;
+  background: rgba(99,102,241,0.15) !important;
+}
+.token-option--taken {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ══ Stats Panels (net worth / most visited) ══ */
+.stats-panel {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.stats-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+.stats-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.stats-rank {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  width: 18px;
+  flex-shrink: 0;
+}
+.stats-token {
+  font-size: 14px;
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.stats-name {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.stats-value {
+  font-weight: 700;
+  color: var(--green);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.stats-value--count {
+  color: var(--text2);
 }

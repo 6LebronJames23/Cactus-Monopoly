@@ -2,11 +2,11 @@ import { CardEvent } from '../types/game';
 
 interface Props {
   card: CardEvent;
-  onOk: () => void;
+  onOk?: () => void;  // kept for compatibility but no longer rendered
   inline?: boolean;
 }
 
-export default function CardModal({ card, onOk, inline }: Props) {
+export default function CardModal({ card, inline }: Props) {
   const isTreasure = card.type === 'treasure';
 
   const body = (
@@ -14,7 +14,6 @@ export default function CardModal({ card, onOk, inline }: Props) {
       <div className="card-type-label">{isTreasure ? '📦 Treasure' : '❓ Surprise'}</div>
       <div className="card-title">{card.title}</div>
       <div className="card-description">{card.description}</div>
-      <button className="btn-primary" onClick={onOk} style={{ marginTop: 16 }}>OK</button>
     </div>
   );
 

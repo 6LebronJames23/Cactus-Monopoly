@@ -106,7 +106,7 @@ export default function AuctionModal({ auction, gameState, myId, inline }: Props
               </button>
             </div>
             <div className="auction-quick-bids">
-              {[1, 10, 50, 100].map(inc => {
+              {[1, 10, 100].map(inc => {
                 const val = auction.highestBid + inc;
                 if (val > me.money) return null;
                 return (

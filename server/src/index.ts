@@ -106,6 +106,13 @@ io.on('connection', (socket) => {
     room.setReady(socket.id, ready);
   });
 
+  socket.on('choose_token', ({ token }: { token: string }, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.chooseToken(socket.id, token);
+    cb?.({ ok: !err, error: err });
+  });
+
   socket.on('start_game', (_data, cb) => {
     const room = rooms.get((socket as any).roomId);
     if (!room) return cb?.({ ok: false, error: 'Room not found' });

@@ -101,6 +101,7 @@ export interface GameState {
   gameStats: GameStats;
   /** Per-game city name/flag overrides (populated when shuffleProperties is on) */
   boardOverrides: Record<number, { name: string; flag?: string }>;
+  visitCounts: Record<number, number>;
 }
 
 export interface CardEvent {
@@ -148,8 +149,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   vacationCash:         true,
   auction:              false,
   noRentInJail:         false,
-  mortgageEnabled:      true,
-  evenBuild:            true,
+  mortgageEnabled:      false,
+  evenBuild:            false,
   randomizeOrder:       true,
   publicTrades:         false,
   shuffleProperties:    false,

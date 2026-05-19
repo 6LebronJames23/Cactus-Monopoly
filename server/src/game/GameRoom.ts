@@ -50,6 +50,7 @@ export class GameRoom {
       settings: { ...DEFAULT_SETTINGS },
       hostId,
       boardOverrides: {},
+      visitCounts: {},
       gameStats: {
         startedAt: 0,
         turnCount: 0,
@@ -211,6 +212,18 @@ export class GameRoom {
     this.broadcast();
   }
 
+  chooseToken(playerId: string, token: string): string | null {
+    if (this.state.gamePhase !== 'lobby') return 'Cannot change token after game starts';
+    const player = this.getPlayer(playerId);
+    if (!player) return 'Player not found';
+    if (!PLAYER_TOKENS.includes(token)) return 'Invalid token';
+    const taken = this.state.players.find(p => p.id !== playerId && p.token === token);
+    if (taken) return 'Token already taken by another player';
+    player.token = token;
+    this.broadcast();
+    return null;
+  }
+
   updateSettings(requesterId: string, patch: Partial<GameSettings>): string | null {
     if (requesterId !== this.state.hostId) return 'Only the host can change settings';
     if (this.state.gamePhase !== 'lobby') return 'Cannot change settings after game starts';
@@ -319,6 +332,9 @@ export class GameRoom {
     const space = BOARD_SPACES[player.position];
     this.addLog(`${player.name} landed on ${space.name}`);
 
+    // Track visit counts
+    this.state.visitCounts[player.position] = (this.state.visitCounts[player.position] ?? 0) + 1;
+
     switch (space.type) {
       case 'go':
         this.state.turnPhase = 'done';
@@ -353,15 +369,25 @@ export class GameRoom {
         this.state.turnPhase = 'done';
         break;
 
-      case 'treasure':
-        this.state.currentCard = this.deck.drawTreasure();
-        this.state.turnPhase = 'card';
+      case 'treasure': {
+        const card = this.deck.drawTreasure();
+        this.state.currentCard = card;
+        this.applyCardEffect(player, card);
+        if (this.state.turnPhase !== 'buy_decision') {
+          this.state.turnPhase = 'done';
+        }
         break;
+      }
 
-      case 'surprise':
-        this.state.currentCard = this.deck.drawSurprise();
-        this.state.turnPhase = 'card';
+      case 'surprise': {
+        const card = this.deck.drawSurprise();
+        this.state.currentCard = card;
+        this.applyCardEffect(player, card);
+        if (this.state.turnPhase !== 'buy_decision') {
+          this.state.turnPhase = 'done';
+        }
         break;
+      }
 
       case 'property':
       case 'airport':
@@ -758,6 +784,7 @@ export class GameRoom {
     const err = this.validateTurn(playerId, 'done');
     if (err) return err;
 
+    this.state.currentCard = null;
     const isDoubles = this.state.dice ? this.state.dice[0] === this.state.dice[1] : false;
     const currentPlayer = this.currentPlayer();
 
@@ -1036,9 +1063,6 @@ export class GameRoom {
 
     } else if (phase === 'buy_decision') {
       this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.botBuyDecision(botId); }, 1000);
-
-    } else if (phase === 'card') {
-      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.resolveCard(botId); }, 900);
 
     } else if (phase === 'done') {
       this.botActionTimer = setTimeout(() => {
