@@ -3,9 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 interface Props {
   dice: [number, number] | null;
   isRolling: boolean;
+  onRoll?: () => void;
 }
 
-export default function DiceRoller({ dice, isRolling }: Props) {
+export default function DiceRoller({ dice, isRolling, onRoll }: Props) {
   const [displayA, setDisplayA] = useState(6);
   const [displayB, setDisplayB] = useState(5);
   const [settled, setSettled] = useState(false);
@@ -42,7 +43,10 @@ export default function DiceRoller({ dice, isRolling }: Props) {
   const isDoubles = dice && dice[0] === dice[1];
 
   return (
-    <div className={`dice-roller ${isRolling ? 'rolling' : ''} ${settled ? 'settled' : ''}`}>
+    <div
+      className={`dice-roller ${isRolling ? 'rolling' : ''} ${settled ? 'settled' : ''} ${onRoll ? 'dice-roller--clickable' : ''}`}
+      onClick={onRoll}
+    >
       <Die value={displayA} rolling={isRolling} delay={0} />
       <Die value={displayB} rolling={isRolling} delay={50} />
       {settled && isDoubles && <span className="doubles-badge">DOUBLES!</span>}

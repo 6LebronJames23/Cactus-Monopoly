@@ -49,6 +49,13 @@ export class GameRoom {
       vacationPot: 0,
       settings: { ...DEFAULT_SETTINGS },
       hostId,
+      gameStats: {
+        startedAt: 0,
+        turnCount: 0,
+        totalDoubles: 0,
+        totalTrades: 0,
+        netWorthHistory: [],
+      },
     };
     this.addPlayer(hostId, hostName);
   }
@@ -234,6 +241,7 @@ export class GameRoom {
     this.state.turnPhase = 'roll';
     this.state.currentPlayerIndex = 0;
     this.addLog('Game started! Good luck everyone! 🌍');
+    this.state.gameStats.startedAt = Date.now();
     this.broadcast();
     return null;
   }
@@ -271,6 +279,7 @@ export class GameRoom {
 
     if (isDoubles) {
       this.state.doublesCount++;
+      this.state.gameStats.totalDoubles++;
       if (this.state.doublesCount >= 3) {
         this.addLog(`${player.name} rolled three doubles! Go to Jail!`);
         this.sendToJail(player);
@@ -751,6 +760,25 @@ export class GameRoom {
       this.addLog(`${currentPlayer.name} rolled doubles — rolls again!`);
     } else {
       this.state.doublesCount = 0;
+      this.state.gameStats.turnCount++;
+      const snapshot: Record<string, number> = {};
+      this.state.players.forEach(p => {
+        if (p.bankrupt) return;
+        const propValue = p.properties.reduce((sum, si) => {
+          const space = BOARD_SPACES[si];
+          return sum + (space.mortgageValue ?? 0) * 2;
+        }, 0);
+        snapshot[p.name] = p.money + propValue;
+      });
+      if (Object.keys(snapshot).length > 0) {
+        this.state.gameStats.netWorthHistory.push({
+          turn: this.state.gameStats.turnCount,
+          values: snapshot,
+        });
+        if (this.state.gameStats.netWorthHistory.length > 100) {
+          this.state.gameStats.netWorthHistory.shift();
+        }
+      }
       this.state.dice = null;
       // Advance to next non-bankrupt player
       let next = (this.state.currentPlayerIndex + 1) % this.state.players.length;
@@ -878,6 +906,7 @@ export class GameRoom {
 
     this.addLog(`Trade accepted! ${from.name} ↔ ${to.name}.`);
     this.state.pendingTrade = null;
+    this.state.gameStats.totalTrades++;
     this.broadcast();
     return null;
   }

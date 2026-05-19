@@ -11,6 +11,7 @@ import CardModal from './CardModal';
 import PropertyModal from './PropertyModal';
 import TradeModal, { IncomingTradeModal } from './TradeModal';
 import AuctionModal from './AuctionModal';
+import EndScreen from './EndScreen';
 
 // Must match CSS: 2 * --cs + 14 * --sw  (2*130 + 14*72 = 1268)
 const BOARD_PX = 1268;
@@ -26,6 +27,7 @@ export default function Game({ gameState, myId }: Props) {
   const [isRolling, setIsRolling] = useState(false);
   const [boardScale, setBoardScale] = useState(1);
   const [rightTab, setRightTab] = useState<'log' | 'trade'>('log');
+  const [showEndScreen, setShowEndScreen] = useState(true);
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,10 @@ export default function Game({ gameState, myId }: Props) {
   useEffect(() => {
     if (myTrade) setRightTab('trade');
   }, [myTrade]);
+
+  useEffect(() => {
+    if (gameState.gamePhase === 'ended') setShowEndScreen(true);
+  }, [gameState.gamePhase]);
 
   const emit = (event: string, data: any = {}, onDone?: () => void) => {
     socket.emit(event, data, (res: any) => {
@@ -96,6 +102,7 @@ export default function Game({ gameState, myId }: Props) {
               visualPositions={visualPositions}
               isRolling={isRolling}
               onSpaceClick={setSelectedSpace}
+              onRoll={isMyTurn && turnPhase === 'roll' && !isRolling && !me?.inJail ? handleRoll : undefined}
             />
           </div>
         </div>
@@ -243,6 +250,10 @@ export default function Game({ gameState, myId }: Props) {
           <div key={t.id} className={`toast toast--${t.type}`}>{t.message}</div>
         ))}
       </div>
+
+      {gameState.gamePhase === 'ended' && showEndScreen && (
+        <EndScreen gameState={gameState} myId={myId} onBack={() => setShowEndScreen(false)} />
+      )}
 
       {/* ── Modals ── */}
       {currentCard && isMyTurn && turnPhase === 'card' && (

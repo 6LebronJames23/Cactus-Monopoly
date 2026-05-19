@@ -9,9 +9,10 @@ interface Props {
   visualPositions: Record<string, number>;
   isRolling: boolean;
   onSpaceClick: (space: BoardSpace) => void;
+  onRoll?: () => void;
 }
 
-export default function Board({ gameState, myId, visualPositions, isRolling, onSpaceClick }: Props) {
+export default function Board({ gameState, myId, visualPositions, isRolling, onSpaceClick, onRoll }: Props) {
   const { players, ownedProperties } = gameState;
 
   const getPlayersAt = (index: number) =>
@@ -70,7 +71,7 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
             <div className="bc__subtitle">WORLDWIDE</div>
 
             <div className="bc__dice-area">
-              <DiceRoller dice={gameState.dice} isRolling={isRolling} />
+              <DiceRoller dice={gameState.dice} isRolling={isRolling} onRoll={onRoll} />
             </div>
 
             {gameState.gamePhase === 'playing' && currentPlayer && (

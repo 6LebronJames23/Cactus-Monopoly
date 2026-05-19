@@ -113,6 +113,15 @@ export interface TradeOffer {
   requestJailCards: number;
 }
 
+export interface GameStats {
+  startedAt: number;          // Date.now() when game started
+  turnCount: number;          // full turns completed (not doubles re-rolls)
+  totalDoubles: number;       // total doubles rolled across all players
+  totalTrades: number;        // accepted trades
+  netWorthHistory: { turn: number; values: Record<string, number> }[];
+  // values key = player name, value = cash + property values (mortgageValue * 2)
+}
+
 export interface GameState {
   roomId: string;
   players: Player[];
@@ -131,4 +140,5 @@ export interface GameState {
   vacationPot: number;
   settings: GameSettings;
   hostId: string;
+  gameStats: GameStats;
 }
