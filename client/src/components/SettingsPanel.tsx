@@ -6,7 +6,7 @@ interface Props {
   isHost: boolean;
 }
 
-const CASH_OPTIONS = [1000, 1500, 2000, 3000, 5000];
+const CASH_OPTIONS = [1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000];
 
 export default function SettingsPanel({ settings, isHost }: Props) {
   const update = (patch: Partial<GameSettings>) => {

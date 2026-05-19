@@ -60,7 +60,10 @@ export default function BoardSpaceCell({
     <div
       className={cls}
       onClick={onClick}
-      style={owner ? { '--owner-color': owner.color } as React.CSSProperties : undefined}
+      style={{
+        ...(owner   ? { '--owner-color': owner.color } as React.CSSProperties : {}),
+        ...(groupColor && !isCorner ? { '--gc': groupColor } as React.CSSProperties : {}),
+      }}
     >
       {/* Color band for property/airport/utility */}
       {groupColor && !isCorner && (
