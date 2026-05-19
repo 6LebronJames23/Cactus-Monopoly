@@ -25,39 +25,51 @@ export default function Game({ gameState, myId }: Props) {
   const [selectedSpace, setSelectedSpace] = useState<BoardSpace | null>(null);
   const [showTrade, setShowTrade] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
-  const [boardScale, setBoardScale] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
   const [userTab, setUserTab] = useState<'log' | 'trade'>('log');
   const [showEndScreen, setShowEndScreen] = useState(true);
 
+  // Final scale = fit-to-container × user zoom level
+  const boardScale = fitScale * userZoom;
+
   const boardAreaRef = useRef<HTMLDivElement>(null);
-  const prevDprRef = useRef<number>(typeof window !== 'undefined' ? window.devicePixelRatio : 1);
+  const userZoomRef = useRef(userZoom);
+  useEffect(() => { userZoomRef.current = userZoom; }, [userZoom]);
+
+  // Clamp zoom and update state
+  const adjustZoom = (delta: number) => {
+    setUserZoom(z => Math.max(0.4, Math.min(2.5, parseFloat((z + delta).toFixed(2)))));
+  };
+  const resetZoom = () => setUserZoom(1);
 
   useEffect(() => {
     const el = boardAreaRef.current;
     if (!el) return;
 
-    const recompute = (fromZoom = false) => {
-      const currentDpr = window.devicePixelRatio;
-      const dprChanged = currentDpr !== prevDprRef.current;
-      prevDprRef.current = currentDpr;
-
-      // When the user zooms in/out, skip rescaling — let browser zoom work
-      // naturally so tiles grow/shrink. board-area is overflow:auto so it scrolls.
-      if (fromZoom && dprChanged) return;
-
+    // Recompute fit-scale whenever the container resizes — no cap, fills large screens too
+    const recompute = () => {
       const w = el.clientWidth - 16;
       const h = el.clientHeight - 16;
-      setBoardScale(Math.min(1, Math.min(w, h) / BOARD_PX));
+      setFitScale(Math.min(w, h) / BOARD_PX);
     };
 
-    const obs = new ResizeObserver(() => recompute(false));
+    const obs = new ResizeObserver(recompute);
     obs.observe(el);
-    // window resize fires on both actual resizes and zoom; treat as zoom-aware
-    const onWindowResize = () => recompute(true);
-    window.addEventListener('resize', onWindowResize);
+    recompute();
+
+    // Scroll-to-zoom: Ctrl+wheel or pinch-trackpad zooms the board
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        adjustZoom(-e.deltaY * 0.001);
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+
     return () => {
       obs.disconnect();
-      window.removeEventListener('resize', onWindowResize);
+      el.removeEventListener('wheel', onWheel);
     };
   }, []);
 
@@ -218,6 +230,15 @@ export default function Game({ gameState, myId }: Props) {
               recentLog={gameState.log.slice(0, 4)}
             />
           </div>
+        </div>
+
+        {/* Zoom controls — bottom-right corner of board area */}
+        <div className="zoom-controls">
+          <button className="zoom-btn" onClick={() => adjustZoom(-0.1)} title="Zoom out">−</button>
+          <button className="zoom-pct" onClick={resetZoom} title="Reset zoom">
+            {Math.round(userZoom * 100)}%
+          </button>
+          <button className="zoom-btn" onClick={() => adjustZoom(0.1)} title="Zoom in">+</button>
         </div>
       </main>
 

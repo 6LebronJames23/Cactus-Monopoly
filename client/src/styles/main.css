@@ -529,10 +529,62 @@ html, body, #root {
   overflow: auto;
   padding: 8px;
   min-width: 0;
+  position: relative;
   background:
     radial-gradient(ellipse 60% 40% at 50% 50%, rgba(99,102,241,0.05) 0%, transparent 70%),
     var(--bg);
 }
+
+/* Zoom controls */
+.zoom-controls {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(15,23,42,0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 3px;
+  z-index: 20;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+.zoom-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.zoom-btn:active { background: rgba(255,255,255,0.18); }
+.zoom-pct {
+  min-width: 42px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.1s;
+  padding: 0 4px;
+}
+.zoom-pct:hover { background: rgba(255,255,255,0.12); }
 
 .panel-title {
   font-size: 10px;
@@ -767,6 +819,7 @@ html, body, #root {
   width: 1372px;
   height: 1372px;
   will-change: transform;
+  transition: transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .board {
