@@ -583,7 +583,8 @@ export class GameRoom {
     this.chargeMoney(player, JAIL_FINE);
     player.inJail = false;
     player.jailTurns = 0;
-    this.addLog(`${player.name} paid $${JAIL_FINE} to get out of jail.`);
+    this.addLog(`${player.name} paid $${JAIL_FINE} to get out of jail. They'll roll next turn.`);
+    this.state.turnPhase = 'done';
     this.broadcast();
     return null;
   }
@@ -597,7 +598,8 @@ export class GameRoom {
     player.getOutOfJailCards--;
     player.inJail = false;
     player.jailTurns = 0;
-    this.addLog(`${player.name} used a Get Out of Jail Free card!`);
+    this.addLog(`${player.name} used a Get Out of Jail Free card! They'll roll next turn.`);
+    this.state.turnPhase = 'done';
     this.broadcast();
     return null;
   }
