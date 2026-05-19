@@ -30,18 +30,27 @@ export default function Game({ gameState, myId }: Props) {
   const [showEndScreen, setShowEndScreen] = useState(true);
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
+  const initialDprRef = useRef<number>(typeof window !== 'undefined' ? window.devicePixelRatio : 1);
 
   useEffect(() => {
     const el = boardAreaRef.current;
     if (!el) return;
-    const obs = new ResizeObserver(() => {
-      const w = el.clientWidth - 16;
-      const h = el.clientHeight - 16;
+    const recompute = () => {
+      // Compensate for browser zoom: when user zooms in, CSS pixels shrink
+      // but we want the board to grow with zoom so text becomes readable.
+      const zoomFactor = window.devicePixelRatio / initialDprRef.current;
+      const w = (el.clientWidth - 16) * zoomFactor;
+      const h = (el.clientHeight - 16) * zoomFactor;
       const fit = Math.min(w, h);
       setBoardScale(Math.min(1, fit / BOARD_PX));
-    });
+    };
+    const obs = new ResizeObserver(recompute);
     obs.observe(el);
-    return () => obs.disconnect();
+    window.addEventListener('resize', recompute);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener('resize', recompute);
+    };
   }, []);
 
   const { visualPositions } = usePlayerMovement(gameState.players);
