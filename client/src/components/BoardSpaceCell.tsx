@@ -115,7 +115,10 @@ export default function BoardSpaceCell({
               key={p.id}
               className="bs__token"
               title={p.name}
-              style={{ filter: `drop-shadow(0 0 4px ${p.color})` }}
+              style={{
+                background: p.color,
+                boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${p.color}, 0 3px 10px rgba(0,0,0,0.7)`,
+              }}
             >
               {p.token}
             </span>

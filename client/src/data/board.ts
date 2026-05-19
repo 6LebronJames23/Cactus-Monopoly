@@ -50,7 +50,7 @@ export const BOARD_SPACES: BoardSpace[] = [
   // ── CORNER 30 ───────────────────────────────────
   { index: 30, name: 'Vacation',       type: 'free_parking' },
 
-  // ── TOP  31-44  (right → left)  yellow(4) + green(3) ──────────────────
+  // ── TOP  31-44  (right → left)  yellow(4) + green(3) ─────────────────
   { index: 31, name: 'Paris',          type: 'property', group: 'yellow',     price: 340, rents: [28,150,450,1000,1200,1400],   houseCost: 150, mortgageValue: 170, flag: '🇫🇷' },
   { index: 32, name: 'Lyon',           type: 'property', group: 'yellow',     price: 360, rents: [31,170,500,1100,1300,1500],   houseCost: 150, mortgageValue: 180, flag: '🇫🇷' },
   { index: 33, name: 'Marseille',      type: 'property', group: 'yellow',     price: 380, rents: [34,180,550,1200,1400,1600],   houseCost: 150, mortgageValue: 190, flag: '🇫🇷' },
@@ -61,27 +61,27 @@ export const BOARD_SPACES: BoardSpace[] = [
   { index: 38, name: 'Milan',          type: 'property', group: 'green',      price: 440, rents: [42,220,660,1500,1800,2100],   houseCost: 200, mortgageValue: 220, flag: '🇮🇹' },
   { index: 39, name: 'Florence',       type: 'property', group: 'green',      price: 460, rents: [44,240,720,1600,1900,2200],   houseCost: 200, mortgageValue: 230, flag: '🇮🇹' },
   { index: 40, name: 'Heathrow',       type: 'airport',  price: 200, rents: [25,50,100,200], mortgageValue: 100, flag: '✈️' },
-  { index: 41, name: 'London',         type: 'property', group: 'teal',       price: 480, rents: [46,250,750,1700,2000,2300],   houseCost: 200, mortgageValue: 240, flag: '🇬🇧' },
-  { index: 42, name: 'Manchester',     type: 'property', group: 'teal',       price: 500, rents: [48,260,780,1800,2100,2400],   houseCost: 200, mortgageValue: 250, flag: '🇬🇧' },
-  { index: 43, name: 'Edinburgh',      type: 'property', group: 'teal',       price: 520, rents: [50,280,820,1900,2200,2500],   houseCost: 200, mortgageValue: 260, flag: '🇬🇧' },
-  { index: 44, name: 'Treasure',       type: 'treasure' },
+  { index: 41, name: 'Treasure',       type: 'treasure' },
+  { index: 42, name: 'Surprise',       type: 'surprise' },
+  { index: 43, name: 'Treasure',       type: 'surprise' },
+  { index: 44, name: 'Surprise',       type: 'surprise' },
 
   // ── CORNER 45 ───────────────────────────────────
   { index: 45, name: 'Go to Jail',     type: 'go_to_jail' },
 
-  // ── LEFT  46-59  (top → bottom)  purple(3) + dark_blue(2) ─────────────
-  { index: 46, name: 'Surprise',       type: 'surprise' },
-  { index: 47, name: 'Shanghai',       type: 'property', group: 'purple',     price: 540, rents: [52,300,900,2000,2400,2800],   houseCost: 250, mortgageValue: 270, flag: '🇨🇳' },
-  { index: 48, name: 'Beijing',        type: 'property', group: 'purple',     price: 580, rents: [56,320,960,2100,2500,2900],   houseCost: 250, mortgageValue: 290, flag: '🇨🇳' },
-  { index: 49, name: 'Shenzhen',       type: 'property', group: 'purple',     price: 620, rents: [60,340,1020,2200,2600,3000],  houseCost: 250, mortgageValue: 310, flag: '🇨🇳' },
-  { index: 50, name: 'Water Works',    type: 'utility',  price: 150, rents: [4,10], mortgageValue: 75, flag: '💧' },
-  { index: 51, name: 'Treasure',       type: 'treasure' },
-  { index: 52, name: 'Surprise',       type: 'surprise' },
-  { index: 53, name: 'Treasure',       type: 'treasure' },
-  { index: 54, name: 'Gas Company',    type: 'utility',  price: 150, rents: [4,10], mortgageValue: 75, flag: '⛽' },
-  { index: 55, name: 'Surprise',       type: 'surprise' },
-  { index: 56, name: 'Treasure',       type: 'treasure' },
-  { index: 57, name: 'Surprise',       type: 'surprise' },
+  // ── LEFT  46-59  (top → bottom)  teal(3) + purple(3) + dark_blue(2) ──
+  { index: 46, name: 'London',         type: 'property', group: 'teal',       price: 480, rents: [46,250,750,1700,2000,2300],   houseCost: 200, mortgageValue: 240, flag: '🇬🇧' },
+  { index: 47, name: 'Manchester',     type: 'property', group: 'teal',       price: 500, rents: [48,260,780,1800,2100,2400],   houseCost: 200, mortgageValue: 250, flag: '🇬🇧' },
+  { index: 48, name: 'Edinburgh',      type: 'property', group: 'teal',       price: 520, rents: [50,280,820,1900,2200,2500],   houseCost: 200, mortgageValue: 260, flag: '🇬🇧' },
+  { index: 49, name: 'Water Works',    type: 'utility',  price: 150, rents: [4,10], mortgageValue: 75, flag: '💧' },
+  { index: 50, name: 'Surprise',       type: 'surprise' },
+  { index: 51, name: 'Shanghai',       type: 'property', group: 'purple',     price: 540, rents: [52,300,900,2000,2400,2800],   houseCost: 250, mortgageValue: 270, flag: '🇨🇳' },
+  { index: 52, name: 'Treasure',       type: 'treasure' },
+  { index: 53, name: 'Beijing',        type: 'property', group: 'purple',     price: 580, rents: [56,320,960,2100,2500,2900],   houseCost: 250, mortgageValue: 290, flag: '🇨🇳' },
+  { index: 54, name: 'Surprise',       type: 'surprise' },
+  { index: 55, name: 'Shenzhen',       type: 'property', group: 'purple',     price: 620, rents: [60,340,1020,2200,2600,3000],  houseCost: 250, mortgageValue: 310, flag: '🇨🇳' },
+  { index: 56, name: 'Gas Company',    type: 'utility',  price: 150, rents: [4,10], mortgageValue: 75, flag: '⛽' },
+  { index: 57, name: 'Treasure',       type: 'treasure' },
   { index: 58, name: 'New York',       type: 'property', group: 'dark_blue',  price: 680, rents: [65,380,1100,2400,2800,3200],  houseCost: 300, mortgageValue: 340, flag: '🇺🇸' },
   { index: 59, name: 'Los Angeles',    type: 'property', group: 'dark_blue',  price: 750, rents: [75,430,1300,2800,3200,3600],  houseCost: 300, mortgageValue: 375, flag: '🇺🇸' },
 ];

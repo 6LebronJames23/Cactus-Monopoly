@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GameState, BoardSpace } from '../types/game';
 import { socket } from '../socket';
 import { BOARD_SPACES } from '../data/board';
@@ -12,6 +12,9 @@ import PropertyModal from './PropertyModal';
 import TradeModal, { IncomingTradeModal } from './TradeModal';
 import AuctionModal from './AuctionModal';
 
+// Must match CSS: 2 * --cs + 14 * --sw  (2*120 + 14*64 = 1136)
+const BOARD_PX = 1136;
+
 interface Props {
   gameState: GameState;
   myId: string;
@@ -21,6 +24,23 @@ export default function Game({ gameState, myId }: Props) {
   const [selectedSpace, setSelectedSpace] = useState<BoardSpace | null>(null);
   const [showTrade, setShowTrade] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
+  const [boardScale, setBoardScale] = useState(1);
+
+  const boardAreaRef = useRef<HTMLDivElement>(null);
+
+  // Scale board to fit available space
+  useEffect(() => {
+    const el = boardAreaRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      const w = el.clientWidth - 16;
+      const h = el.clientHeight - 68; // leave room for action bar
+      const fit = Math.min(w, h);
+      setBoardScale(Math.min(1, fit / BOARD_PX));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const { visualPositions } = usePlayerMovement(gameState.players);
   const toasts = useToasts(gameState.log);
@@ -39,7 +59,6 @@ export default function Game({ gameState, myId }: Props) {
 
   const handleRoll = () => {
     setIsRolling(true);
-    // Give the dice 900ms to spin before the server responds
     setTimeout(() => {
       emit('roll_dice', {}, () => setIsRolling(false));
     }, 200);
@@ -53,14 +72,25 @@ export default function Game({ gameState, myId }: Props) {
       </aside>
 
       {/* CENTER: board + controls */}
-      <main className="board-area">
-        <Board
-          gameState={gameState}
-          myId={myId}
-          visualPositions={visualPositions}
-          isRolling={isRolling}
-          onSpaceClick={setSelectedSpace}
-        />
+      <main className="board-area" ref={boardAreaRef}>
+        {/* Scale wrapper — sized to scaled dimensions so action bar sits flush below */}
+        <div
+          className="board-scale-outer"
+          style={{ width: BOARD_PX * boardScale, height: BOARD_PX * boardScale }}
+        >
+          <div
+            className="board-scale-inner"
+            style={{ transform: `scale(${boardScale})`, transformOrigin: 'top left' }}
+          >
+            <Board
+              gameState={gameState}
+              myId={myId}
+              visualPositions={visualPositions}
+              isRolling={isRolling}
+              onSpaceClick={setSelectedSpace}
+            />
+          </div>
+        </div>
 
         {/* ── Action Bar ── */}
         <div className="action-bar">
