@@ -176,8 +176,11 @@ function HomeScreen({ onCreate, onJoin, error, setError }: {
   return (
     <div className="home-screen">
       <div className="home-card">
-        <div className="home-logo">🌍</div>
-        <h1 className="home-title">Monopoly Worldwide</h1>
+        <div className="home-logo">
+          <div className="home-logo-cactus">🌵</div>
+          <div className="home-logo-coins">🪙🪙🪙</div>
+        </div>
+        <h1 className="home-title">Cactus Monopoly</h1>
         <p className="home-sub">60 cities · 10 country groups · Up to 9 players</p>
 
         <div className="tab-row">

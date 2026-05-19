@@ -260,7 +260,7 @@ export class GameRoom {
       this.state.boardOverrides = this.buildPropertyShuffle();
     }
 
-    this.addLog('Game started! Good luck everyone! 🌍');
+    this.addLog('Game started! Good luck everyone! 🌵');
     this.state.gameStats.startedAt = Date.now();
     this.broadcast();
     return null;

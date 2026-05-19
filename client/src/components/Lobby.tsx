@@ -72,9 +72,9 @@ export default function Lobby({ gameState, myId, roomId, onLeave }: Props) {
         {/* Left — players */}
         <div className="lobby-card lobby-card--players">
           <div className="lobby-header">
-            <span style={{ fontSize: 40 }}>🌍</span>
+            <span style={{ fontSize: 40 }}>🌵</span>
             <div>
-              <h2 style={{ margin: 0, fontSize: 20 }}>Monopoly Worldwide</h2>
+              <h2 style={{ margin: 0, fontSize: 20 }}>Cactus Monopoly</h2>
               <p style={{ margin: 0, opacity: 0.5, fontSize: 13 }}>Waiting for players…</p>
             </div>
           </div>
