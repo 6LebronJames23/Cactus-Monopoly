@@ -1,4 +1,5 @@
 import { GameState, BoardSpace } from '../types/game';
+import Flag from './Flag';
 import { BOARD_SPACES, GROUP_COLORS } from '../data/board';
 
 interface Props {
@@ -59,7 +60,7 @@ export default function PlayerPanel({ gameState, myId, onSelectSpace }: Props) {
                       onClick={() => onSelectSpace(space)}
                       title={`${space.name}${owned?.houses ? ` (${owned.houses === 5 ? 'hotel' : owned.houses + ' houses'})` : ''}${owned?.mortgaged ? ' [mortgaged]' : ''}`}
                     >
-                      <span className="pc-prop-flag">{space.flag ?? '🏙️'}</span>
+                      <Flag emoji={space.flag ?? '🏙️'} size={18} className="pc-prop-flag" />
                       <span className="pc-prop-name">{space.name}</span>
                       {owned?.houses === 5 && <span className="pc-prop-hotel">🏨</span>}
                       {owned?.houses > 0 && owned.houses < 5 && (

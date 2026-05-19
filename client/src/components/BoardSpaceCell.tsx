@@ -1,4 +1,5 @@
 import { BoardSpace, Player, OwnedProperty } from '../types/game';
+import Flag from './Flag';
 
 interface Props {
   space: BoardSpace;
@@ -100,7 +101,11 @@ export default function BoardSpaceCell({
           </div>
         ) : (
           <>
-            <span className={`bs__icon${space.type === 'property' || space.type === 'airport' || space.type === 'utility' ? ' bs__icon--flag' : ''}`}>{spaceIcon}</span>
+            <Flag
+              emoji={spaceIcon}
+              size={space.type === 'property' ? 26 : 20}
+              className={`bs__icon${space.type === 'property' || space.type === 'airport' || space.type === 'utility' ? ' bs__icon--flag' : ''}`}
+            />
             <span className="bs__name">{space.name}</span>
             {price && <span className="bs__price">{price}</span>}
           </>

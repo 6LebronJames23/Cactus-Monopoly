@@ -1,4 +1,5 @@
 import { BoardSpace, OwnedProperty, Player } from '../types/game';
+import Flag from './Flag';
 import { GROUP_COLORS, GROUP_COUNTRIES } from '../data/board';
 
 interface Props {
@@ -34,7 +35,7 @@ export default function PropertyModal({
           <div className="property-color-header" style={{ background: groupColor }} />
         )}
 
-        <div className="property-modal-icon">{space.flag ?? '🏙️'}</div>
+        <div className="property-modal-icon"><Flag emoji={space.flag ?? '🏙️'} size={52} /></div>
         <h2 className="property-modal-name">{space.name}</h2>
         {space.group && (
           <div style={{ textAlign: 'center', fontSize: 12, color: GROUP_COLORS[space.group], fontWeight: 600, padding: '2px 0 0' }}>
