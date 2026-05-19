@@ -75,6 +75,14 @@ export default function SettingsPanel({ settings, isHost }: Props) {
         onChange={v => update({ randomizeOrder: v })}
         isHost={isHost}
       />
+      <SettingRow
+        icon="👁️"
+        label="Public trades"
+        description="All players can see pending trade offers"
+        value={settings.publicTrades}
+        onChange={v => update({ publicTrades: v })}
+        isHost={isHost}
+      />
 
       <div className="settings-row">
         <span className="settings-row__icon">💵</span>

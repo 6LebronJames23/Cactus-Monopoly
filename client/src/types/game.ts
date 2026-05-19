@@ -90,6 +90,7 @@ export interface GameSettings {
   mortgageEnabled:      boolean;
   evenBuild:            boolean;
   randomizeOrder:       boolean;
+  publicTrades:         boolean;
 }
 
 export interface AuctionState {

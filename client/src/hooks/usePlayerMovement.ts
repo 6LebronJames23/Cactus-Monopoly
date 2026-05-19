@@ -3,7 +3,7 @@ import { Player } from '../types/game';
 import { soundStep } from '../utils/sounds';
 
 const TOTAL_SPACES = 60;
-const STEP_MS = 160; // ms per space moved
+const STEP_MS = 90; // ms per space moved
 const JAIL_INDEX = 15;
 
 export function usePlayerMovement(players: Player[]) {

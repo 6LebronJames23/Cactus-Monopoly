@@ -24,10 +24,10 @@
   --purple:   #a855f7;
 
   /* Board sizing — 60-space board, 16 spaces per side (incl. corners) */
-  --sw: 64px;    /* space width  */
-  --sh: 100px;   /* space height */
-  --cs: 120px;   /* corner size  */
-  --band: 16px;  /* color band   */
+  --sw: 72px;    /* space width  */
+  --sh: 112px;   /* space height */
+  --cs: 130px;   /* corner size  */
+  --band: 18px;  /* color band   */
 
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -485,7 +485,7 @@ html, body, #root {
   flex-shrink: 0;
 }
 .side-panel--left  { border-right: 1px solid var(--border); }
-.side-panel--right { border-left:  1px solid var(--border); }
+.side-panel--right { border-left: 1px solid var(--border); display: flex; flex-direction: column; }
 
 .board-area {
   flex: 1;
@@ -1018,21 +1018,30 @@ html, body, #root {
   position: relative;
 }
 .die-face {
-  width: 54px;
-  height: 54px;
-  background: linear-gradient(145deg, #f8fafc, #e2e8f0);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  color: #111;
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(145deg, #ffffff, #dde3ec);
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 8px;
+  gap: 2px;
   box-shadow:
-    0 4px 12px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.8),
-    inset 0 -2px 0 rgba(0,0,0,0.1);
+    0 5px 14px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 -2px 0 rgba(0,0,0,0.12);
   transition: transform 0.08s;
   will-change: transform;
+}
+.die-dot {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #1e293b;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+  align-self: center;
+  justify-self: center;
 }
 .die-rolling {
   animation: dieRoll 0.12s ease-in-out infinite;
@@ -1187,6 +1196,53 @@ html, body, #root {
   border-left: 2px solid var(--accent);
   padding-left: 8px;
 }
+
+/* ── Right panel tabs ── */
+.right-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.right-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.right-tab:hover { color: var(--text); }
+.right-tab--active { color: var(--accent); border-bottom-color: var(--accent); }
+.right-tab--alert { color: #f59e0b; }
+.right-tab--alert.right-tab--active { border-bottom-color: #f59e0b; }
+
+/* Trade inline panel */
+.trade-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.trade-panel__empty, .trade-panel__idle {
+  padding: 16px;
+  flex: 1;
+}
+.trade-inline {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 12px;
+}
+.trade-inline .trade-columns { flex-direction: column; gap: 8px; }
+.trade-inline .trade-divider { text-align: center; color: var(--text3); }
+.trade-inline .trade-col { min-width: 0; }
+.trade-inline .trade-footer { margin-top: auto; padding-top: 8px; }
+.trade-waiting-body { padding: 12px; }
 
 /* ══════════════════════════════════════════════
    TOASTS
@@ -1466,14 +1522,14 @@ html, body, #root {
   :root { --sw: 52px; --sh: 78px; --cs: 96px; --band: 11px; }
   .bc__title { font-size: 18px; letter-spacing: 4px; }
   .bc__globe { font-size: 44px; }
-  .die-face { width: 48px; height: 48px; font-size: 28px; }
+  .die-face { width: 48px; height: 48px; padding: 7px; }
 }
 @media (max-width: 1350px) {
   :root { --sw: 44px; --sh: 66px; --cs: 82px; --band: 10px; }
   .side-panel { width: 205px; min-width: 185px; }
   .bc__title { font-size: 15px; letter-spacing: 3px; }
   .bc__globe { font-size: 36px; }
-  .die-face { width: 42px; height: 42px; font-size: 24px; border-radius: 10px; }
+  .die-face { width: 42px; height: 42px; padding: 6px; border-radius: 10px; }
   .bc__subtitle { font-size: 8px; letter-spacing: 5px; }
 }
 @media (max-width: 1100px) {
@@ -1481,5 +1537,5 @@ html, body, #root {
   .side-panel { width: 175px; min-width: 155px; }
   .bs__name { font-size: 5.5px; }
   .bc__title { font-size: 12px; letter-spacing: 2px; }
-  .die-face { width: 36px; height: 36px; font-size: 20px; border-radius: 8px; }
+  .die-face { width: 36px; height: 36px; padding: 5px; border-radius: 8px; }
 }

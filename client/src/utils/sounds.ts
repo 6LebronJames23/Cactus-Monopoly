@@ -95,3 +95,10 @@ export function soundBuildHouse() {
   tone(450, 0.08, 'square', 0.13, 0.06);
   tone(600, 0.14, 'square', 0.13, 0.14);
 }
+
+export function soundMyTurn() {
+  // Three ascending pings — "hey, it's your turn!"
+  tone(600, 0.10, 'sine', 0.18);
+  tone(800, 0.10, 'sine', 0.18, 0.12);
+  tone(1000, 0.22, 'sine', 0.22, 0.24);
+}

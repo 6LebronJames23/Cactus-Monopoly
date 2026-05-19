@@ -1,8 +1,17 @@
 import { useEffect, useRef } from 'react';
 import * as S from '../utils/sounds';
 
-export function useGameSounds(log: string[]) {
+export function useGameSounds(log: string[], isMyTurn?: boolean) {
   const prevTopRef = useRef<string>('');
+  const prevIsMyTurnRef = useRef<boolean>(false);
+
+  // Fire turn-notification sound when it becomes MY turn
+  useEffect(() => {
+    if (isMyTurn && !prevIsMyTurnRef.current) {
+      S.soundMyTurn();
+    }
+    prevIsMyTurnRef.current = isMyTurn ?? false;
+  }, [isMyTurn]);
 
   useEffect(() => {
     if (!log.length) return;

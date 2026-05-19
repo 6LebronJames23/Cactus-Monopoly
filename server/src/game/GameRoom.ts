@@ -314,7 +314,6 @@ export class GameRoom {
         break;
 
       case 'jail':
-      case 'free_parking':
         this.state.turnPhase = 'done';
         break;
 
@@ -745,7 +744,7 @@ export class GameRoom {
     const isDoubles = this.state.dice ? this.state.dice[0] === this.state.dice[1] : false;
     const currentPlayer = this.currentPlayer();
 
-    if (isDoubles && !currentPlayer.inJail && this.state.doublesCount > 0) {
+    if (isDoubles && !currentPlayer.inJail && !currentPlayer.bankrupt && this.state.doublesCount > 0) {
       // Player gets another turn
       this.state.turnPhase = 'roll';
       this.state.dice = null;

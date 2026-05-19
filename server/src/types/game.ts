@@ -125,6 +125,7 @@ export interface GameSettings {
   mortgageEnabled:      boolean;  // allow mortgaging properties
   evenBuild:            boolean;  // must build/sell houses evenly
   randomizeOrder:       boolean;  // shuffle player order at game start
+  publicTrades:         boolean;  // all players can see pending trade offers
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -136,6 +137,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   mortgageEnabled:      true,
   evenBuild:            true,
   randomizeOrder:       true,
+  publicTrades:         false,
 };
 
 export interface AuctionState {

@@ -7,14 +7,13 @@ import { useToasts } from '../hooks/useToasts';
 import { useGameSounds } from '../hooks/useGameSounds';
 import Board from './Board';
 import PlayerPanel from './PlayerPanel';
-import GameLog from './GameLog';
 import CardModal from './CardModal';
 import PropertyModal from './PropertyModal';
 import TradeModal, { IncomingTradeModal } from './TradeModal';
 import AuctionModal from './AuctionModal';
 
-// Must match CSS: 2 * --cs + 14 * --sw  (2*120 + 14*64 = 1136)
-const BOARD_PX = 1136;
+// Must match CSS: 2 * --cs + 14 * --sw  (2*130 + 14*72 = 1268)
+const BOARD_PX = 1268;
 
 interface Props {
   gameState: GameState;
@@ -26,16 +25,16 @@ export default function Game({ gameState, myId }: Props) {
   const [showTrade, setShowTrade] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [boardScale, setBoardScale] = useState(1);
+  const [rightTab, setRightTab] = useState<'log' | 'trade'>('log');
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
 
-  // Scale board to fit available space
   useEffect(() => {
     const el = boardAreaRef.current;
     if (!el) return;
     const obs = new ResizeObserver(() => {
       const w = el.clientWidth - 16;
-      const h = el.clientHeight - 68; // leave room for action bar
+      const h = el.clientHeight - 68;
       const fit = Math.min(w, h);
       setBoardScale(Math.min(1, fit / BOARD_PX));
     });
@@ -45,12 +44,20 @@ export default function Game({ gameState, myId }: Props) {
 
   const { visualPositions } = usePlayerMovement(gameState.players);
   const toasts = useToasts(gameState.log);
-  useGameSounds(gameState.log);
 
   const me = gameState.players.find(p => p.id === myId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === myId;
   const { turnPhase, dice, currentCard } = gameState;
+
+  useGameSounds(gameState.log, isMyTurn);
+
+  // Switch to trade tab automatically when a trade is pending and involves me
+  const myTrade = gameState.pendingTrade &&
+    (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId);
+  useEffect(() => {
+    if (myTrade) setRightTab('trade');
+  }, [myTrade]);
 
   const emit = (event: string, data: any = {}, onDone?: () => void) => {
     socket.emit(event, data, (res: any) => {
@@ -68,14 +75,13 @@ export default function Game({ gameState, myId }: Props) {
 
   return (
     <div className="game-layout">
-      {/* LEFT: player cards */}
+      {/* LEFT: player cards + log */}
       <aside className="side-panel side-panel--left">
         <PlayerPanel gameState={gameState} myId={myId} onSelectSpace={setSelectedSpace} />
       </aside>
 
       {/* CENTER: board + controls */}
       <main className="board-area" ref={boardAreaRef}>
-        {/* Scale wrapper — sized to scaled dimensions so action bar sits flush below */}
         <div
           className="board-scale-outer"
           style={{ width: BOARD_PX * boardScale, height: BOARD_PX * boardScale }}
@@ -142,12 +148,15 @@ export default function Game({ gameState, myId }: Props) {
                 );
               })()}
 
-              {/* End turn */}
-              {turnPhase === 'done' && (
-                <ActionBtn onClick={() => emit('end_turn')} variant="end">
-                  End Turn →
-                </ActionBtn>
-              )}
+              {/* End turn / Roll Again on doubles */}
+              {turnPhase === 'done' && (() => {
+                const isDoublesRoll = dice && dice[0] === dice[1];
+                return (
+                  <ActionBtn onClick={() => emit('end_turn')} variant="end">
+                    {isDoublesRoll ? '🎲 Roll Again →' : 'End Turn →'}
+                  </ActionBtn>
+                );
+              })()}
             </div>
           )}
 
@@ -165,9 +174,6 @@ export default function Game({ gameState, myId }: Props) {
           )}
 
           <div className="action-bar__right">
-            {me && !me.bankrupt && gameState.gamePhase === 'playing' && !gameState.pendingTrade && (
-              <button className="btn-trade" onClick={() => setShowTrade(true)}>🤝 Trade</button>
-            )}
             {me && !me.bankrupt && gameState.gamePhase === 'playing' && (
               <button
                 className="btn-bankrupt"
@@ -180,9 +186,55 @@ export default function Game({ gameState, myId }: Props) {
         </div>
       </main>
 
-      {/* RIGHT: log */}
+      {/* RIGHT: tabbed panel — Log | Trade */}
       <aside className="side-panel side-panel--right">
-        <GameLog log={gameState.log} />
+        <div className="right-tabs">
+          <button
+            className={`right-tab ${rightTab === 'log' ? 'right-tab--active' : ''}`}
+            onClick={() => setRightTab('log')}
+          >
+            📋 Log
+          </button>
+          <button
+            className={`right-tab ${rightTab === 'trade' ? 'right-tab--active' : ''} ${myTrade ? 'right-tab--alert' : ''}`}
+            onClick={() => setRightTab('trade')}
+          >
+            🤝 Trade{myTrade ? ' ●' : ''}
+          </button>
+        </div>
+
+        {rightTab === 'log' && (
+          <div className="game-log">
+            <div className="log-entries">
+              {gameState.log.map((entry, i) => (
+                <div key={i} className={`log-entry ${i === 0 ? 'log-entry--latest' : ''}`}>
+                  {entry}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {rightTab === 'trade' && (
+          <div className="trade-panel">
+            {gameState.gamePhase !== 'playing' || me?.bankrupt ? (
+              <div className="trade-panel__empty">Trading not available</div>
+            ) : gameState.pendingTrade ? (
+              <IncomingTradeModal gameState={gameState} myId={myId} inline />
+            ) : showTrade ? (
+              <TradeModal gameState={gameState} myId={myId} onClose={() => setShowTrade(false)} inline />
+            ) : (
+              <div className="trade-panel__idle">
+                <p style={{ color: 'var(--text3)', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
+                  No active trade
+                </p>
+                <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowTrade(true)}>
+                  🤝 Propose Trade
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </aside>
 
       {/* ── Toast notifications ── */}
@@ -210,16 +262,9 @@ export default function Game({ gameState, myId }: Props) {
           onClose={() => setSelectedSpace(null)}
         />
       )}
-      {showTrade && !gameState.pendingTrade && (
-        <TradeModal gameState={gameState} myId={myId} onClose={() => setShowTrade(false)} />
-      )}
       {gameState.pendingAuction && (
         <AuctionModal auction={gameState.pendingAuction} gameState={gameState} myId={myId} />
       )}
-      {gameState.pendingTrade &&
-        (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId) && (
-          <IncomingTradeModal gameState={gameState} myId={myId} />
-        )}
     </div>
   );
 }

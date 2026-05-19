@@ -1,71 +1,78 @@
 import { useState, useEffect, useRef } from 'react';
 
-const FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-
 interface Props {
   dice: [number, number] | null;
   isRolling: boolean;
 }
 
 export default function DiceRoller({ dice, isRolling }: Props) {
-  const [displayA, setDisplayA] = useState('⚅');
-  const [displayB, setDisplayB] = useState('⚄');
+  const [displayA, setDisplayA] = useState(6);
+  const [displayB, setDisplayB] = useState(5);
   const [settled, setSettled] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
     if (isRolling) {
       setSettled(false);
-      // Spin rapidly
       intervalRef.current = setInterval(() => {
-        setDisplayA(FACES[Math.floor(Math.random() * 6)]);
-        setDisplayB(FACES[Math.floor(Math.random() * 6)]);
-      }, 80);
+        setDisplayA(Math.ceil(Math.random() * 6));
+        setDisplayB(Math.ceil(Math.random() * 6));
+      }, 70);
     } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
       if (dice) {
-        // Brief extra spin then settle
         let ticks = 0;
-        const spin = setInterval(() => {
-          setDisplayA(FACES[Math.floor(Math.random() * 6)]);
-          setDisplayB(FACES[Math.floor(Math.random() * 6)]);
+        intervalRef.current = setInterval(() => {
+          setDisplayA(Math.ceil(Math.random() * 6));
+          setDisplayB(Math.ceil(Math.random() * 6));
           ticks++;
-          if (ticks > 6) {
-            clearInterval(spin);
-            setDisplayA(FACES[dice[0] - 1]);
-            setDisplayB(FACES[dice[1] - 1]);
+          if (ticks > 5) {
+            clearInterval(intervalRef.current!);
+            setDisplayA(dice[0]);
+            setDisplayB(dice[1]);
             setSettled(true);
           }
-        }, 60);
+        }, 55);
       }
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRolling, dice?.[0], dice?.[1]]);
 
   const isDoubles = dice && dice[0] === dice[1];
 
   return (
     <div className={`dice-roller ${isRolling ? 'rolling' : ''} ${settled ? 'settled' : ''}`}>
-      <Die face={displayA} rolling={isRolling} delay={0} />
-      <Die face={displayB} rolling={isRolling} delay={40} />
-      {settled && isDoubles && (
-        <span className="doubles-badge">DOUBLES!</span>
-      )}
+      <Die value={displayA} rolling={isRolling} delay={0} />
+      <Die value={displayB} rolling={isRolling} delay={50} />
+      {settled && isDoubles && <span className="doubles-badge">DOUBLES!</span>}
     </div>
   );
 }
 
-function Die({ face, rolling, delay }: { face: string; rolling: boolean; delay: number }) {
+// Dot positions for each face: array of [col, row] on a 3×3 grid (1-indexed)
+const DOT_POSITIONS: Record<number, [number, number][]> = {
+  1: [[2,2]],
+  2: [[1,1],[3,3]],
+  3: [[1,1],[2,2],[3,3]],
+  4: [[1,1],[3,1],[1,3],[3,3]],
+  5: [[1,1],[3,1],[2,2],[1,3],[3,3]],
+  6: [[1,1],[3,1],[1,2],[3,2],[1,3],[3,3]],
+};
+
+function Die({ value, rolling, delay }: { value: number; rolling: boolean; delay: number }) {
   return (
     <div
       className={`die-face ${rolling ? 'die-rolling' : 'die-still'}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {face}
+      {(DOT_POSITIONS[value] ?? []).map(([c, r], i) => (
+        <span
+          key={i}
+          className="die-dot"
+          style={{ gridColumn: c, gridRow: r }}
+        />
+      ))}
     </div>
   );
 }
