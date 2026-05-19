@@ -120,16 +120,14 @@ export default function BoardSpaceCell({
         ) : (space.type === 'property' || space.type === 'airport' || space.type === 'utility') ? (
           <>
             <span className="bs__name bs__name--big">{space.name}</span>
-            <span className="bs__flag-badge">
-              <Flag emoji={spaceIcon} size={22} className="bs__flag-img" />
-            </span>
-            {price && <span className="bs__price-pill bs__price-pill--prominent">{price}</span>}
+            <Flag emoji={spaceIcon} size={24} className="bs__flag-raw" />
+            {price && <span className="bs__price-tag">{price}</span>}
           </>
         ) : (
           <>
             <span className="bs__icon bs__icon--special">{spaceIcon}</span>
             <span className="bs__name bs__name--special">{space.name}</span>
-            {price && <span className="bs__price-pill">{price}</span>}
+            {price && <span className="bs__price-tag bs__price-tag--special">{price}</span>}
           </>
         )}
       </div>
