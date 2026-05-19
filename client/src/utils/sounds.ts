@@ -23,7 +23,7 @@ function tone(
   } catch { /* AudioContext blocked — silently ignore */ }
 }
 
-function noise(dur: number, freqHz = 400, vol = 0.15) {
+function noise(dur: number, freqHz = 400, vol = 0.15, delay = 0) {
   try {
     const c = ctx();
     const sr = c.sampleRate;
@@ -36,16 +36,26 @@ function noise(dur: number, freqHz = 400, vol = 0.15) {
     filt.type = 'bandpass';
     filt.frequency.value = freqHz;
     const g = c.createGain();
-    g.gain.setValueAtTime(vol, c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+    g.gain.setValueAtTime(vol, c.currentTime + delay);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + dur);
     src.connect(filt); filt.connect(g); g.connect(c.destination);
-    src.start(); src.stop(c.currentTime + dur + 0.01);
+    src.start(c.currentTime + delay);
+    src.stop(c.currentTime + delay + dur + 0.01);
   } catch { /* silently ignore */ }
 }
 
 export function soundDiceRoll() {
-  noise(0.18, 600, 0.18);
-  noise(0.12, 900, 0.10);
+  // Rapid rattling effect — multiple short bursts like dice shaking in a cup
+  for (let i = 0; i < 6; i++) {
+    noise(0.06, 500 + Math.random() * 400, 0.14, i * 0.06);
+  }
+  // Final landing thud
+  noise(0.12, 200, 0.20, 0.36);
+}
+
+export function soundStep() {
+  // Soft tick per board step — like a token sliding to the next space
+  tone(520 + Math.random() * 80, 0.06, 'sine', 0.07);
 }
 
 export function soundBuy() {

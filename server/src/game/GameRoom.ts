@@ -174,6 +174,8 @@ export class GameRoom {
   startGame(requesterId: string): string | null {
     if (requesterId !== this.state.hostId) return 'Only the host can start';
     if (this.state.players.length < 2) return 'Need at least 2 players';
+    const notReady = this.state.players.filter(p => p.id !== requesterId && !p.isReady);
+    if (notReady.length > 0) return `${notReady.map(p => p.name).join(', ')} ${notReady.length === 1 ? 'is' : 'are'} not ready yet`;
     if (this.state.settings.randomizeOrder) {
       // Fisher-Yates shuffle
       const arr = this.state.players;

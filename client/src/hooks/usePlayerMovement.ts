@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Player } from '../types/game';
+import { soundStep } from '../utils/sounds';
 
 const TOTAL_SPACES = 60;
 const STEP_MS = 160; // ms per space moved
@@ -52,6 +53,7 @@ export function usePlayerMovement(players: Player[]) {
       steps.forEach((pos, i) => {
         const t = setTimeout(() => {
           setVisualPositions(v => ({ ...v, [player.id]: pos }));
+          soundStep();
           if (i === steps.length - 1) setMovingPlayerId(null);
         }, i * STEP_MS);
         timersRef.current.push(t);

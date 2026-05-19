@@ -13,6 +13,9 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
   const [copied, setCopied] = useState(false);
   const isHost = gameState.hostId === myId;
   const me = gameState.players.find(p => p.id === myId);
+  const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+  const allReady = nonHostPlayers.length === 0 || nonHostPlayers.every(p => p.isReady);
+  const notReadyNames = nonHostPlayers.filter(p => !p.isReady).map(p => p.name);
 
   const copyCode = () => {
     navigator.clipboard.writeText(roomId);
@@ -89,13 +92,21 @@ export default function Lobby({ gameState, myId, roomId }: Props) {
               </button>
             )}
             {isHost && (
-              <button
-                className="btn-primary"
-                onClick={startGame}
-                disabled={gameState.players.length < 2}
-              >
-                🎲 Start Game
-              </button>
+              <>
+                <button
+                  className="btn-primary"
+                  onClick={startGame}
+                  disabled={gameState.players.length < 2 || !allReady}
+                  title={!allReady ? `Waiting for: ${notReadyNames.join(', ')}` : ''}
+                >
+                  🎲 Start Game
+                </button>
+                {!allReady && gameState.players.length >= 2 && (
+                  <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6, textAlign: 'center' }}>
+                    Waiting for {notReadyNames.join(', ')} to ready up
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
