@@ -18,9 +18,10 @@ export type ColorGroup =
   | 'red'
   | 'yellow'
   | 'green'
+  | 'lime'
+  | 'teal'
   | 'purple'
-  | 'dark_blue'
-  | 'teal';
+  | 'dark_blue';
 
 export interface BoardSpace {
   index: number;

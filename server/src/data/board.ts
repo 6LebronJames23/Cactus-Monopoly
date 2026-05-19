@@ -62,9 +62,9 @@ export const BOARD_SPACES: BoardSpace[] = [
   { index: 39, name: 'Florence',       type: 'property', group: 'green',      price: 460, rents: [44,240,720,1600,1900,2200],   houseCost: 200, mortgageValue: 230, flag: '🇮🇹' },
   { index: 40, name: 'Heathrow',       type: 'airport',  price: 200, rents: [25,50,100,200], mortgageValue: 100, flag: '✈️' },
   { index: 41, name: 'Treasure',       type: 'treasure' },
-  { index: 42, name: 'Surprise',       type: 'surprise' },
-  { index: 43, name: 'Treasure',       type: 'treasure' },
-  { index: 44, name: 'Visa Fee',       type: 'tax',      taxAmount: 75 },
+  { index: 42, name: 'Treasure',       type: 'treasure' },
+  { index: 43, name: 'Singapore',      type: 'property', group: 'lime',       price: 460, rents: [42,230,700,1600,1900,2200],   houseCost: 200, mortgageValue: 230, flag: '🇸🇬' },
+  { index: 44, name: 'Kuala Lumpur',   type: 'property', group: 'lime',       price: 480, rents: [44,250,750,1700,2050,2400],   houseCost: 200, mortgageValue: 240, flag: '🇲🇾' },
 
   // ── CORNER 45 ───────────────────────────────────
   { index: 45, name: 'Go to Jail',     type: 'go_to_jail' },
