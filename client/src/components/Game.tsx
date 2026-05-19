@@ -127,12 +127,16 @@ export default function Game({ gameState, myId }: Props) {
               {/* Buy decision */}
               {turnPhase === 'buy_decision' && gameState.pendingBuySpaceIndex !== null && (() => {
                 const space = BOARD_SPACES[gameState.pendingBuySpaceIndex];
+                const canAfford = (me?.money ?? 0) >= (space.price ?? 0);
                 return (
                   <div className="action-bar__group">
                     <span className="action-bar__buy-info">
                       Buy <b>{space.flag} {space.name}</b> for <b>${space.price}</b>?
+                      {!canAfford && (
+                        <span className="action-bar__cant-afford"> — Not enough money!</span>
+                      )}
                     </span>
-                    <ActionBtn onClick={() => emit('buy_property')} variant="buy">✓ Buy</ActionBtn>
+                    <ActionBtn onClick={() => emit('buy_property')} variant="buy" disabled={!canAfford}>✓ Buy</ActionBtn>
                     <ActionBtn onClick={() => emit('decline_buy')} variant="decline">✗ Pass</ActionBtn>
                   </div>
                 );

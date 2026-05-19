@@ -541,7 +541,8 @@ html, body, #root {
   border: 1px solid rgba(34,197,94,0.2);
 }
 .action-bar__group  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.action-bar__buy-info { font-size: 14px; color: var(--text2); white-space: nowrap; }
+.action-bar__buy-info { font-size: 14px; color: var(--text2); }
+.action-bar__cant-afford { color: #f87171; font-weight: 600; }
 .action-bar__waiting {
   display: flex;
   align-items: center;
