@@ -13,8 +13,8 @@ import TradeModal, { IncomingTradeModal } from './TradeModal';
 import AuctionModal from './AuctionModal';
 import EndScreen from './EndScreen';
 
-// Must match CSS: 2 * --cs + 14 * --sw  (2*130 + 14*72 = 1268)
-const BOARD_PX = 1268;
+// Must match CSS: 2 * --cs + 14 * --sw  (2*140 + 14*78 = 1372)
+const BOARD_PX = 1372;
 
 interface Props {
   gameState: GameState;
@@ -26,7 +26,7 @@ export default function Game({ gameState, myId }: Props) {
   const [showTrade, setShowTrade] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [boardScale, setBoardScale] = useState(1);
-  const [rightTab, setRightTab] = useState<'log' | 'trade'>('log');
+  const [userTab, setUserTab] = useState<'log' | 'trade'>('log');
   const [showEndScreen, setShowEndScreen] = useState(true);
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
@@ -56,9 +56,12 @@ export default function Game({ gameState, myId }: Props) {
 
   const myTrade = gameState.pendingTrade &&
     (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId);
-  useEffect(() => {
-    if (myTrade) setRightTab('trade');
-  }, [myTrade]);
+
+  // Auto-selected right panel content (priority order)
+  const showAuctionPanel = !!gameState.pendingAuction;
+  const showCardPanel = !!currentCard && isMyTurn && turnPhase === 'card';
+  const showTradePanel = !!myTrade || (userTab === 'trade' && !showAuctionPanel && !showCardPanel);
+  const showLogPanel = !showAuctionPanel && !showCardPanel && !showTradePanel;
 
   useEffect(() => {
     if (gameState.gamePhase === 'ended') setShowEndScreen(true);
@@ -201,24 +204,46 @@ export default function Game({ gameState, myId }: Props) {
         </div>
       </main>
 
-      {/* RIGHT: tabbed panel — Log | Trade */}
+      {/* RIGHT: auto-switching panel — Auction > Card > Trade > Log */}
       <aside className="side-panel side-panel--right">
         <div className="right-tabs">
-          <button
-            className={`right-tab ${rightTab === 'log' ? 'right-tab--active' : ''}`}
-            onClick={() => setRightTab('log')}
-          >
-            📋 Log
-          </button>
-          <button
-            className={`right-tab ${rightTab === 'trade' ? 'right-tab--active' : ''} ${myTrade ? 'right-tab--alert' : ''}`}
-            onClick={() => setRightTab('trade')}
-          >
-            🤝 Trade{myTrade ? ' ●' : ''}
-          </button>
+          {showAuctionPanel && <div className="right-tab right-tab--active right-tab--alert">🔨 Auction</div>}
+          {!showAuctionPanel && showCardPanel && (
+            <div className="right-tab right-tab--active right-tab--alert">
+              {currentCard!.type === 'treasure' ? '📦 Treasure' : '❓ Surprise'}
+            </div>
+          )}
+          {!showAuctionPanel && !showCardPanel && (
+            <>
+              <button
+                className={`right-tab ${showLogPanel ? 'right-tab--active' : ''}`}
+                onClick={() => setUserTab('log')}
+              >
+                📋 Log
+              </button>
+              <button
+                className={`right-tab ${showTradePanel ? 'right-tab--active' : ''} ${myTrade ? 'right-tab--alert' : ''}`}
+                onClick={() => setUserTab('trade')}
+              >
+                🤝 Trade{myTrade ? ' ●' : ''}
+              </button>
+            </>
+          )}
         </div>
 
-        {rightTab === 'log' && (
+        {showAuctionPanel && (
+          <div className="side-content-pane">
+            <AuctionModal auction={gameState.pendingAuction!} gameState={gameState} myId={myId} inline />
+          </div>
+        )}
+
+        {showCardPanel && (
+          <div className="side-content-pane">
+            <CardModal card={currentCard!} onOk={() => emit('resolve_card')} inline />
+          </div>
+        )}
+
+        {!showAuctionPanel && !showCardPanel && showLogPanel && (
           <div className="game-log">
             <div className="log-entries">
               {gameState.log.map((entry, i) => (
@@ -230,7 +255,7 @@ export default function Game({ gameState, myId }: Props) {
           </div>
         )}
 
-        {rightTab === 'trade' && (
+        {!showAuctionPanel && !showCardPanel && showTradePanel && (
           <div className="trade-panel">
             {gameState.gamePhase !== 'playing' || me?.bankrupt ? (
               <div className="trade-panel__empty">Trading not available</div>
@@ -263,10 +288,7 @@ export default function Game({ gameState, myId }: Props) {
         <EndScreen gameState={gameState} myId={myId} onBack={() => setShowEndScreen(false)} />
       )}
 
-      {/* Modals */}
-      {currentCard && isMyTurn && turnPhase === 'card' && (
-        <CardModal card={currentCard} onOk={() => emit('resolve_card')} />
-      )}
+      {/* PropertyModal stays as overlay (per-tile click) */}
       {selectedSpace && (
         <PropertyModal
           space={selectedSpace}
@@ -280,9 +302,6 @@ export default function Game({ gameState, myId }: Props) {
           onUnmortgage={() => emit('unmortgage_property', { spaceIndex: selectedSpace.index })}
           onClose={() => setSelectedSpace(null)}
         />
-      )}
-      {gameState.pendingAuction && (
-        <AuctionModal auction={gameState.pendingAuction} gameState={gameState} myId={myId} />
       )}
     </div>
   );

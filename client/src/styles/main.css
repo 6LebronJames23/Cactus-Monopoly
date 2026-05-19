@@ -24,10 +24,10 @@
   --purple:   #a855f7;
 
   /* Board sizing — 60-space board, 16 spaces per side (incl. corners) */
-  --sw: 72px;    /* space width  */
-  --sh: 112px;   /* space height */
-  --cs: 130px;   /* corner size  */
-  --band: 22px;  /* color band   */
+  --sw: 78px;    /* space width  */
+  --sh: 122px;   /* space height */
+  --cs: 140px;   /* corner size  */
+  --band: 26px;  /* color band   */
 
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -466,6 +466,27 @@ html, body, #root {
   color: var(--text3);
 }
 
+/* Inline auction (side-panel) variant */
+.auction-modal--inline {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  animation: none;
+  max-width: 100%;
+}
+.auction-modal--inline .auction-header { padding: 14px 16px 10px; }
+.auction-modal--inline .auction-header h2 { font-size: 18px; }
+.auction-modal--inline .auction-gavel { font-size: 24px; }
+.auction-modal--inline .auction-property { padding: 12px 16px; }
+.auction-modal--inline .auction-flag { font-size: 26px; }
+.auction-modal--inline .auction-name { font-size: 15px; }
+.auction-modal--inline .auction-current-bid { padding: 14px 16px 10px; }
+.auction-modal--inline .auction-bid-amount { font-size: 30px; }
+.auction-modal--inline .auction-players { padding: 0 16px 12px; }
+.auction-modal--inline .auction-actions { padding: 0 16px 16px; }
+
 /* ══════════════════════════════════════════════
    GAME LAYOUT
    ══════════════════════════════════════════════ */
@@ -476,13 +497,19 @@ html, body, #root {
   background: var(--bg);
 }
 .side-panel {
-  width: 236px;
-  min-width: 200px;
+  width: 220px;
+  min-width: 190px;
   background: var(--bg2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+}
+.side-panel--right { width: 260px; min-width: 220px; }
+.side-content-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
 }
 .side-panel--left  { border-right: 1px solid var(--border); }
 .side-panel--right { border-left: 1px solid var(--border); display: flex; flex-direction: column; }
@@ -810,18 +837,19 @@ html, body, #root {
 .bs__body--left  { transform: rotate(90deg);  }
 .bs__body--right { transform: rotate(-90deg); }
 
-.bs__icon  { font-size: 20px; line-height: 1; }
-.bs__icon--flag { font-size: 24px; }
+.bs__icon  { font-size: 22px; line-height: 1; }
+.bs__icon--flag { font-size: 28px; }
 .bs__name  {
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 800;
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.2;
   color: #fff;
   word-break: break-word;
-  max-width: 60px;
+  max-width: 70px;
   padding: 0 2px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+  letter-spacing: -0.01em;
 }
 .bs__price {
   font-size: 7.5px;
@@ -841,9 +869,9 @@ html, body, #root {
   width: 100%;
   height: 100%;
 }
-.bs__corner-icon { font-size: 34px; line-height: 1; }
+.bs__corner-icon { font-size: 38px; line-height: 1; }
 .bs__corner-name {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   text-align: center;
   color: var(--text);
@@ -935,32 +963,33 @@ html, body, #root {
 
 /* Owned-state tile text */
 .bs__name--owned {
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.55);
   word-break: break-word;
-  max-width: 56px;
+  max-width: 66px;
   padding: 0 2px;
 }
 .bs__mortgaged-label {
-  font-size: 6.5px;
+  font-size: 8px;
   font-weight: 800;
-  color: rgba(239,68,68,0.7);
+  color: rgba(239,68,68,0.75);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .bs__price-pill {
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 800;
-  color: rgba(255,255,255,0.55);
-  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.08);
   border-radius: 99px;
-  padding: 1px 5px;
+  padding: 2px 7px;
   white-space: nowrap;
-  margin-top: 1px;
-  border: 1px solid rgba(255,255,255,0.08);
+  margin-top: 2px;
+  border: 1px solid rgba(255,255,255,0.1);
+  letter-spacing: 0.01em;
 }
 
 /* Houses */
@@ -1446,6 +1475,18 @@ html, body, #root {
 }
 .card-treasure { border-color: rgba(250,204,21,0.3); background: #100c03; }
 .card-surprise  { border-color: rgba(168,85,247,0.3); background: #0d0915; }
+
+/* Inline card (side-panel) variant */
+.card-modal--inline {
+  width: 100%;
+  padding: 22px 18px;
+  border-radius: 14px;
+  gap: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  animation: none;
+}
+.card-modal--inline .card-title { font-size: 18px; }
+.card-modal--inline .card-description { font-size: 13px; line-height: 1.55; }
 .card-type-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text3); }
 .card-title { font-size: 24px; font-weight: 900; }
 .card-description { font-size: 15px; color: var(--text2); line-height: 1.65; }
@@ -1762,30 +1803,42 @@ html, body, #root {
 /* ══════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════ */
-@media (max-width: 1600px) {
-  :root { --sw: 52px; --sh: 78px; --cs: 96px; --band: 11px; }
+@media (max-width: 1700px) {
+  :root { --sw: 64px; --sh: 100px; --cs: 116px; --band: 22px; }
   .bc__title { font-size: 18px; letter-spacing: 4px; }
   .bc__globe { font-size: 44px; }
-  .die-face { width: 52px; height: 52px; padding: 7px; }
-  .bs__owner-avatar { width: 32px; height: 32px; font-size: 16px; }
+  .die-face { width: 54px; height: 54px; padding: 7px; }
+  .bs__owner-avatar { width: 34px; height: 34px; font-size: 17px; }
+  .bs__name { font-size: 9.5px; max-width: 60px; }
+  .bs__corner-icon { font-size: 32px; }
+  .bs__corner-name { font-size: 10.5px; }
 }
-@media (max-width: 1350px) {
-  :root { --sw: 44px; --sh: 66px; --cs: 82px; --band: 10px; }
-  .side-panel { width: 205px; min-width: 185px; }
+@media (max-width: 1400px) {
+  :root { --sw: 52px; --sh: 80px; --cs: 96px; --band: 18px; }
+  .side-panel { width: 200px; min-width: 180px; }
+  .side-panel--right { width: 230px; min-width: 200px; }
   .bc__title { font-size: 15px; letter-spacing: 3px; }
   .bc__globe { font-size: 36px; }
   .die-face { width: 44px; height: 44px; padding: 6px; border-radius: 10px; }
   .bc__subtitle { font-size: 8px; letter-spacing: 5px; }
-  .bs__owner-avatar { width: 27px; height: 27px; font-size: 14px; }
-  .bs__name--owned { font-size: 6px; }
+  .bs__owner-avatar { width: 28px; height: 28px; font-size: 14px; }
+  .bs__name { font-size: 8px; max-width: 50px; }
+  .bs__name--owned { font-size: 7px; }
+  .bs__corner-icon { font-size: 28px; }
+  .bs__corner-name { font-size: 9.5px; }
+  .bs__icon { font-size: 18px; }
+  .bs__icon--flag { font-size: 22px; }
 }
-@media (max-width: 1100px) {
-  :root { --sw: 37px; --sh: 54px; --cs: 70px; --band: 8px; }
+@media (max-width: 1150px) {
+  :root { --sw: 42px; --sh: 64px; --cs: 80px; --band: 13px; }
   .side-panel { width: 175px; min-width: 155px; }
-  .bs__name { font-size: 5.5px; }
+  .side-panel--right { width: 195px; min-width: 170px; }
+  .bs__name { font-size: 6.5px; max-width: 40px; }
   .bc__title { font-size: 12px; letter-spacing: 2px; }
   .die-face { width: 36px; height: 36px; padding: 5px; border-radius: 8px; }
   .bs__owner-avatar { width: 22px; height: 22px; font-size: 11px; }
-  .bs__name--owned { font-size: 5px; }
-  .bs__price-pill { font-size: 5.5px; padding: 1px 4px; }
+  .bs__name--owned { font-size: 6px; }
+  .bs__price-pill { font-size: 6.5px; padding: 1px 4px; }
+  .bs__corner-icon { font-size: 22px; }
+  .bs__corner-name { font-size: 8px; }
 }

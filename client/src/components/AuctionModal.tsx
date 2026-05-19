@@ -7,9 +7,10 @@ interface Props {
   auction: AuctionState;
   gameState: GameState;
   myId: string;
+  inline?: boolean;
 }
 
-export default function AuctionModal({ auction, gameState, myId }: Props) {
+export default function AuctionModal({ auction, gameState, myId, inline }: Props) {
   const [bidInput, setBidInput] = useState(auction.highestBid + 1);
   const space = BOARD_SPACES[auction.spaceIndex];
   const me = gameState.players.find(p => p.id === myId);
@@ -32,9 +33,8 @@ export default function AuctionModal({ auction, gameState, myId }: Props) {
     socket.emit('pass_auction', {});
   };
 
-  return (
-    <div className="modal-overlay">
-      <div className="auction-modal">
+  const inner = (
+    <div className={`auction-modal ${inline ? 'auction-modal--inline' : ''}`}>
         <div className="auction-header">
           <span className="auction-gavel">🔨</span>
           <h2>Auction</h2>
@@ -127,10 +127,12 @@ export default function AuctionModal({ auction, gameState, myId }: Props) {
           </div>
         )}
 
-        {hasPassed && (
-          <div className="auction-passed-msg">You passed on this auction.</div>
-        )}
-      </div>
+      {hasPassed && (
+        <div className="auction-passed-msg">You passed on this auction.</div>
+      )}
     </div>
   );
+
+  if (inline) return inner;
+  return <div className="modal-overlay">{inner}</div>;
 }
