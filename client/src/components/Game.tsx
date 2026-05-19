@@ -30,26 +30,34 @@ export default function Game({ gameState, myId }: Props) {
   const [showEndScreen, setShowEndScreen] = useState(true);
 
   const boardAreaRef = useRef<HTMLDivElement>(null);
-  const initialDprRef = useRef<number>(typeof window !== 'undefined' ? window.devicePixelRatio : 1);
+  const prevDprRef = useRef<number>(typeof window !== 'undefined' ? window.devicePixelRatio : 1);
 
   useEffect(() => {
     const el = boardAreaRef.current;
     if (!el) return;
-    const recompute = () => {
-      // Compensate for browser zoom: when user zooms in, CSS pixels shrink
-      // but we want the board to grow with zoom so text becomes readable.
-      const zoomFactor = window.devicePixelRatio / initialDprRef.current;
-      const w = (el.clientWidth - 16) * zoomFactor;
-      const h = (el.clientHeight - 16) * zoomFactor;
-      const fit = Math.min(w, h);
-      setBoardScale(Math.min(1, fit / BOARD_PX));
+
+    const recompute = (fromZoom = false) => {
+      const currentDpr = window.devicePixelRatio;
+      const dprChanged = currentDpr !== prevDprRef.current;
+      prevDprRef.current = currentDpr;
+
+      // When the user zooms in/out, skip rescaling — let browser zoom work
+      // naturally so tiles grow/shrink. board-area is overflow:auto so it scrolls.
+      if (fromZoom && dprChanged) return;
+
+      const w = el.clientWidth - 16;
+      const h = el.clientHeight - 16;
+      setBoardScale(Math.min(1, Math.min(w, h) / BOARD_PX));
     };
-    const obs = new ResizeObserver(recompute);
+
+    const obs = new ResizeObserver(() => recompute(false));
     obs.observe(el);
-    window.addEventListener('resize', recompute);
+    // window resize fires on both actual resizes and zoom; treat as zoom-aware
+    const onWindowResize = () => recompute(true);
+    window.addEventListener('resize', onWindowResize);
     return () => {
       obs.disconnect();
-      window.removeEventListener('resize', recompute);
+      window.removeEventListener('resize', onWindowResize);
     };
   }, []);
 
