@@ -31,6 +31,8 @@ export class GameRoom {
   private botActionTimer: ReturnType<typeof setTimeout> | null = null;
   private botAuctionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private botTradeTimer: ReturnType<typeof setTimeout> | null = null;
+  // Cooldown: turn number of last trade proposal per bot (prevents spamming same offer)
+  private botLastTradeTurn = new Map<string, number>();
 
   constructor(io: Server, roomId: string, hostId: string, hostName: string) {
     this.io = io;
@@ -791,6 +793,38 @@ export class GameRoom {
     return null;
   }
 
+  sellProperty(playerId: string, spaceIndex: number): string | null {
+    if (this.state.gamePhase !== 'playing') return 'Game not in progress';
+    const player = this.getPlayer(playerId);
+    if (!player) return 'Player not found';
+    const owned = this.state.ownedProperties[spaceIndex];
+    if (!owned || owned.ownerId !== playerId) return 'You don\'t own this property';
+    if ((owned.houses ?? 0) > 0) return 'Sell all houses first';
+    if (owned.mortgaged) return 'Unmortgage before selling';
+    const space = BOARD_SPACES[spaceIndex];
+    const salePrice = space.mortgageValue ?? Math.floor((space.price ?? 0) / 2);
+    this.addMoney(player, salePrice);
+    delete this.state.ownedProperties[spaceIndex];
+    player.properties = player.properties.filter(i => i !== spaceIndex);
+    this.addLog(`${player.name} sold ${space.name} to the bank for $${salePrice}.`);
+    this.broadcast();
+    return null;
+  }
+
+  /** Counter an incoming trade by cancelling it and proposing a reverse offer */
+  counterTrade(
+    playerId: string,
+    tradeId: string,
+    counter: Omit<TradeOffer, 'id' | 'fromId'>,
+  ): string | null {
+    if (!this.state.pendingTrade) return 'No pending trade';
+    if (this.state.pendingTrade.id !== tradeId) return 'Trade ID mismatch';
+    if (this.state.pendingTrade.toId !== playerId) return 'Not the trade recipient';
+    // Cancel the current trade silently, then propose the counter
+    this.state.pendingTrade = null;
+    return this.proposeTrade(playerId, counter);
+  }
+
   endTurn(playerId: string): string | null {
     const err = this.validateTurn(playerId, 'done');
     if (err) return err;
@@ -1423,6 +1457,10 @@ export class GameRoom {
     const bot = this.state.players.find(p => p.id === botId);
     if (!bot || bot.bankrupt || bot.properties.length === 0) return;
 
+    // Cooldown: don't propose more than once every 3 turns per bot
+    const lastTurn = this.botLastTradeTurn.get(botId) ?? -999;
+    if (this.state.gameStats.turnCount - lastTurn < 3) return;
+
     const activePlayers = this.state.players.filter(p => !p.bankrupt && p.id !== botId);
     if (!activePlayers.length) return;
 
@@ -1500,7 +1538,7 @@ export class GameRoom {
     if (candidates.length === 0) return;
     candidates.sort((a, b) => b.score - a.score);
     const best = candidates[0];
-    this.proposeTrade(botId, {
+    const err = this.proposeTrade(botId, {
       toId: best.toId,
       offerProperties: best.offerProperties,
       offerMoney: best.offerMoney,
@@ -1509,6 +1547,9 @@ export class GameRoom {
       requestMoney: best.requestMoney,
       requestJailCards: 0,
     });
+    if (!err) {
+      this.botLastTradeTurn.set(botId, this.state.gameStats.turnCount);
+    }
   }
 
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameState, TradeOffer } from '../types/game';
 import { BOARD_SPACES, GROUP_COLORS } from '../data/board';
 import { socket } from '../socket';
@@ -169,10 +169,48 @@ export function IncomingTradeModal({
   const trade = gameState.pendingTrade!;
   const from = gameState.players.find(p => p.id === trade.fromId);
   const to   = gameState.players.find(p => p.id === trade.toId);
+  const me   = gameState.players.find(p => p.id === myId)!;
+
+  const [countering, setCountering] = useState(false);
+  // Pre-fill counter with the original offer flipped
+  const [cOfferProps,   setCOfferProps]   = useState<number[]>(trade.requestProperties);
+  const [cOfferMoney,   setCOfferMoney]   = useState(trade.requestMoney);
+  const [cOfferJail,    setCOfferJail]    = useState(trade.requestJailCards);
+  const [cRequestProps, setCRequestProps] = useState<number[]>(trade.offerProperties);
+  const [cRequestMoney, setCRequestMoney] = useState(trade.offerMoney);
+  const [cRequestJail,  setCRequestJail]  = useState(trade.offerJailCards);
+
+  // Reset counter form if trade changes
+  useEffect(() => {
+    setCOfferProps(trade.requestProperties);
+    setCOfferMoney(trade.requestMoney);
+    setCOfferJail(trade.requestJailCards);
+    setCRequestProps(trade.offerProperties);
+    setCRequestMoney(trade.offerMoney);
+    setCRequestJail(trade.offerJailCards);
+    setCountering(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trade.id]);
 
   const accept  = () => socket.emit('accept_trade',  { tradeId: trade.id });
   const decline = () => socket.emit('decline_trade', { tradeId: trade.id });
   const cancel  = () => socket.emit('decline_trade', { tradeId: trade.id });
+
+  const sendCounter = () => {
+    socket.emit('counter_trade', {
+      tradeId: trade.id,
+      counter: {
+        toId: trade.fromId,
+        offerProperties: cOfferProps,
+        offerMoney: cOfferMoney,
+        offerJailCards: cOfferJail,
+        requestProperties: cRequestProps,
+        requestMoney: cRequestMoney,
+        requestJailCards: cRequestJail,
+      },
+    });
+    setCountering(false);
+  };
 
   const isProposer = trade.fromId === myId;
   const isRecipient = trade.toId === myId;
@@ -267,19 +305,66 @@ export function IncomingTradeModal({
     return null;
   }
 
+  // Counter offer form
+  const counterForm = countering && (
+    <>
+      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, fontStyle: 'italic' }}>
+        ↩ Sending counter to {from?.token} <b>{from?.name}</b>
+      </div>
+      <div className="trade-columns">
+        <div className="trade-col">
+          <div className="trade-col-header" style={{ color: me?.color }}>You offer</div>
+          <PropList
+            spaceIndices={me?.properties ?? []}
+            selected={cOfferProps}
+            onToggle={si => setCOfferProps(p => p.includes(si) ? p.filter(x => x !== si) : [...p, si])}
+            ownedProperties={gameState.ownedProperties}
+          />
+          <MoneyInput value={cOfferMoney} max={me?.money ?? 0} onChange={setCOfferMoney} />
+          {(me?.getOutOfJailCards ?? 0) > 0 && (
+            <CountInput value={cOfferJail} max={me?.getOutOfJailCards ?? 0} onChange={setCOfferJail} />
+          )}
+        </div>
+        <div className="trade-divider">⇌</div>
+        <div className="trade-col">
+          <div className="trade-col-header" style={{ color: from?.color }}>You want</div>
+          <PropList
+            spaceIndices={from?.properties ?? []}
+            selected={cRequestProps}
+            onToggle={si => setCRequestProps(p => p.includes(si) ? p.filter(x => x !== si) : [...p, si])}
+            ownedProperties={gameState.ownedProperties}
+          />
+          <MoneyInput value={cRequestMoney} max={from?.money ?? 0} onChange={setCRequestMoney} />
+          {(from?.getOutOfJailCards ?? 0) > 0 && (
+            <CountInput value={cRequestJail} max={from?.getOutOfJailCards ?? 0} onChange={setCRequestJail} />
+          )}
+        </div>
+      </div>
+      <div className="trade-footer">
+        <button className="btn-action" onClick={() => setCountering(false)}>← Back</button>
+        <button className="btn-primary" style={{ width: 'auto', padding: '10px 20px' }} onClick={sendCounter}>
+          ↩ Send Counter
+        </button>
+      </div>
+    </>
+  );
+
   // Recipient reviewing offer
   const reviewBody = (
     <>
       <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 8 }}>
         Offer from {from?.token} <b>{from?.name}</b>
       </div>
-      {tradeColumns}
-      <div className="trade-footer">
-        <button className="btn-action btn-decline" onClick={decline}>✗ Decline</button>
-        <button className="btn-primary btn-buy" style={{ width: 'auto', padding: '10px 24px' }} onClick={accept}>
-          ✓ Accept
-        </button>
-      </div>
+      {countering ? counterForm : tradeColumns}
+      {!countering && (
+        <div className="trade-footer">
+          <button className="btn-action btn-decline" onClick={decline}>✗ Decline</button>
+          <button className="btn-action" onClick={() => setCountering(true)}>↩ Counter</button>
+          <button className="btn-primary btn-buy" style={{ width: 'auto', padding: '10px 24px' }} onClick={accept}>
+            ✓ Accept
+          </button>
+        </div>
+      )}
     </>
   );
 

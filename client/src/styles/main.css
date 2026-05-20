@@ -1958,6 +1958,8 @@ html, body, #root {
   transition: all 0.15s;
 }
 .btn-action:hover { background: var(--bg3); color: var(--text); border-color: rgba(255,255,255,0.25); }
+.btn-action--danger { color: #f87171; border-color: rgba(248,113,113,0.35); }
+.btn-action--danger:hover { background: rgba(248,113,113,0.12); color: #f87171; border-color: rgba(248,113,113,0.6); }
 .trade-inline .trade-footer { padding: 10px 0 4px; flex-direction: column; gap: 6px; }
 .trade-inline .trade-footer .btn-action,
 .trade-inline .trade-footer .btn-primary { width: 100%; justify-content: center; }

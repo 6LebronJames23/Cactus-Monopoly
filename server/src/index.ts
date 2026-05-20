@@ -208,6 +208,20 @@ io.on('connection', (socket) => {
     cb?.({ ok: !err, error: err });
   });
 
+  socket.on('sell_property', ({ spaceIndex }: { spaceIndex: number }, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.sellProperty(socket.id, spaceIndex);
+    cb?.({ ok: !err, error: err });
+  });
+
+  socket.on('counter_trade', ({ tradeId, counter }: { tradeId: string; counter: any }, cb) => {
+    const room = rooms.get((socket as any).roomId);
+    if (!room) return cb?.({ ok: false, error: 'Room not found' });
+    const err = room.counterTrade(socket.id, tradeId, counter);
+    cb?.({ ok: !err, error: err });
+  });
+
   socket.on('update_settings', (patch, cb) => {
     const room = rooms.get((socket as any).roomId);
     if (!room) return cb?.({ ok: false, error: 'Room not found' });

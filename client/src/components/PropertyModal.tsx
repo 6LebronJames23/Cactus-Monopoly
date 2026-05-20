@@ -12,12 +12,13 @@ interface Props {
   onSellHouse: () => void;
   onMortgage: () => void;
   onUnmortgage: () => void;
+  onSellToBank: () => void;
   onClose: () => void;
 }
 
 export default function PropertyModal({
   space, owned, players, myId, isMyTurn,
-  onBuyHouse, onSellHouse, onMortgage, onUnmortgage, onClose,
+  onBuyHouse, onSellHouse, onMortgage, onUnmortgage, onSellToBank, onClose,
 }: Props) {
   const owner = players.find(p => p.id === owned?.ownerId);
   const isOwner = owned?.ownerId === myId;
@@ -122,6 +123,15 @@ export default function PropertyModal({
               ? <button className="btn-action" onClick={onMortgage}>📜 Mortgage</button>
               : <button className="btn-action" onClick={onUnmortgage}>♻️ Unmortgage</button>
             }
+            {!(owned?.houses) && !owned?.mortgaged && (
+              <button
+                className="btn-action btn-action--danger"
+                onClick={() => { if (confirm(`Sell ${space.name} to bank for $${space.mortgageValue}?`)) onSellToBank(); }}
+                title={`Sell to bank for $${space.mortgageValue} (half price)`}
+              >
+                🏚️ Sell (${space.mortgageValue})
+              </button>
+            )}
           </div>
         )}
 
@@ -131,6 +141,15 @@ export default function PropertyModal({
               ? <button className="btn-action" onClick={onMortgage}>📜 Mortgage</button>
               : <button className="btn-action" onClick={onUnmortgage}>♻️ Unmortgage</button>
             }
+            {!owned?.mortgaged && (
+              <button
+                className="btn-action btn-action--danger"
+                onClick={() => { if (confirm(`Sell ${space.name} to bank for $${space.mortgageValue}?`)) onSellToBank(); }}
+                title={`Sell to bank for $${space.mortgageValue} (half price)`}
+              >
+                🏚️ Sell (${space.mortgageValue})
+              </button>
+            )}
           </div>
         )}
       </div>

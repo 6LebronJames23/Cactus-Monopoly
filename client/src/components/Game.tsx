@@ -337,6 +337,7 @@ export default function Game({ gameState, myId, onLeave }: Props) {
           onSellHouse={() => emit('sell_house', { spaceIndex: selectedSpace.index })}
           onMortgage={() => emit('mortgage_property', { spaceIndex: selectedSpace.index })}
           onUnmortgage={() => emit('unmortgage_property', { spaceIndex: selectedSpace.index })}
+          onSellToBank={() => emit('sell_property', { spaceIndex: selectedSpace.index }, () => setSelectedSpace(null))}
           onClose={() => setSelectedSpace(null)}
         />
       )}
