@@ -8,7 +8,6 @@ interface Props {
   myId: string;
   onSelectSpace: (space: BoardSpace) => void;
   actionsSlot?: React.ReactNode;
-  recentLog?: string[];
 }
 
 function calcNetWorth(player: import('../types/game').Player, ownedProperties: GameState['ownedProperties']): number {
@@ -24,7 +23,7 @@ function calcNetWorth(player: import('../types/game').Player, ownedProperties: G
   return worth;
 }
 
-export default function PlayerPanel({ gameState, myId, onSelectSpace, actionsSlot, recentLog }: Props) {
+export default function PlayerPanel({ gameState, myId, onSelectSpace, actionsSlot }: Props) {
   const { players, ownedProperties, currentPlayerIndex, visitCounts, gamePhase } = gameState;
   const isPlaying = gamePhase === 'playing';
 
@@ -112,15 +111,6 @@ export default function PlayerPanel({ gameState, myId, onSelectSpace, actionsSlo
         <div className="stats-section">
           {actionsSlot && <div className="side-actions">{actionsSlot}</div>}
 
-          {recentLog && recentLog.length > 0 && (
-            <div className="side-log">
-              {recentLog.map((entry, i) => (
-                <div key={i} className={`side-log-entry ${i === 0 ? 'side-log-entry--latest' : ''}`}>
-                  {entry}
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* Net Worth */}
           {netWorths.length > 0 && (

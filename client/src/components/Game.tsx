@@ -3,7 +3,6 @@ import { GameState, BoardSpace } from '../types/game';
 import { socket } from '../socket';
 import { BOARD_SPACES } from '../data/board';
 import { usePlayerMovement } from '../hooks/usePlayerMovement';
-import { useToasts } from '../hooks/useToasts';
 import { useGameSounds } from '../hooks/useGameSounds';
 import Board from './Board';
 import PlayerPanel from './PlayerPanel';
@@ -75,7 +74,6 @@ export default function Game({ gameState, myId, onLeave }: Props) {
   }, []);
 
   const { visualPositions } = usePlayerMovement(gameState.players);
-  const toasts = useToasts(gameState.log);
 
   const me = gameState.players.find(p => p.id === myId);
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -211,7 +209,6 @@ export default function Game({ gameState, myId, onLeave }: Props) {
           myId={myId}
           onSelectSpace={setSelectedSpace}
           actionsSlot={gameState.gamePhase === 'playing' ? actionsSlot : null}
-          recentLog={gameState.log.slice(0, 5)}
         />
       </aside>
 
@@ -319,12 +316,6 @@ export default function Game({ gameState, myId, onLeave }: Props) {
         )}
       </aside>
 
-      {/* Toasts */}
-      <div className="toast-stack">
-        {toasts.map(t => (
-          <div key={t.id} className={`toast toast--${t.type}`}>{t.message}</div>
-        ))}
-      </div>
 
       {gameState.gamePhase === 'ended' && showEndScreen && (
         <EndScreen gameState={gameState} myId={myId} onBack={() => setShowEndScreen(false)} />
