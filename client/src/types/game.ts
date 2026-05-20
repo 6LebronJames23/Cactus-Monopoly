@@ -101,6 +101,7 @@ export interface AuctionState {
   highestBidderId: string | null;
   highestBid: number;
   passedPlayers: string[];
+  deadlineMs: number;
 }
 
 export interface TradeOffer {

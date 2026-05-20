@@ -410,6 +410,9 @@ html, body, #root {
 .settings-value { font-size: 13px; font-weight: 700; color: var(--text2); }
 
 /* ── Auction Modal ── */
+/* ══════════════════════════════════════════════
+   AUCTION MODAL  (richup.io-style)
+   ══════════════════════════════════════════════ */
 .auction-modal {
   background: var(--bg2);
   border: 1px solid var(--border2);
@@ -420,82 +423,173 @@ html, body, #root {
   box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
   animation: modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
+
+/* Header: gavel + title + timer pushed to right */
 .auction-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 22px 24px 16px;
+  gap: 10px;
+  padding: 18px 20px 14px;
 }
-.auction-gavel { font-size: 30px; }
-.auction-header h2 { font-size: 22px; font-weight: 900; margin: 0; }
-.auction-color-bar { height: 4px; width: 100%; }
+.auction-header h2 { font-size: 20px; font-weight: 900; margin: 0; flex: 1; }
+.auction-gavel { font-size: 26px; }
+
+/* Circular countdown timer */
+.auction-timer {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auction-timer-ring {
+  width: 46px;
+  height: 46px;
+  position: absolute;
+  top: 0; left: 0;
+}
+.auction-timer-num {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text);
+  position: relative;
+  z-index: 1;
+}
+.auction-timer--warn .auction-timer-num  { color: #f59e0b; }
+.auction-timer--danger .auction-timer-num { color: #ef4444; animation: timerPulse 0.5s ease-in-out infinite alternate; }
+@keyframes timerPulse {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0.6; transform: scale(1.15); }
+}
+
+/* Color accent bar */
+.auction-color-bar { height: 3px; width: 100%; }
+
+/* Property info row */
 .auction-property {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 24px;
+  padding: 14px 20px;
   background: var(--bg3);
 }
-.auction-flag { font-size: 34px; }
-.auction-name { font-size: 19px; font-weight: 800; }
-.auction-market { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.auction-flag { font-size: 30px; line-height: 1; }
+.auction-name { font-size: 17px; font-weight: 800; }
+.auction-market { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* Big current-bid display */
 .auction-current-bid {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 18px 24px 14px;
-  gap: 4px;
+  padding: 16px 20px 10px;
+  gap: 3px;
 }
+.auction-bid-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; }
 .auction-bid-amount {
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 900;
   color: var(--yellow);
   line-height: 1;
-  text-shadow: 0 0 20px rgba(250,204,21,0.3);
+  text-shadow: 0 0 30px rgba(250,204,21,0.35);
+  transition: transform 0.12s;
 }
-.auction-bid-by { font-size: 14px; font-weight: 600; }
-.auction-bid-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+.auction-bid-by { font-size: 13px; font-weight: 600; }
+
+/* Active-player chips */
 .auction-players {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 24px 16px;
+  gap: 5px;
+  padding: 0 20px 12px;
   justify-content: center;
 }
 .auction-player-chip {
-  font-size: 12px;
-  padding: 5px 12px;
+  font-size: 11px;
+  padding: 4px 10px;
   border-radius: 99px;
   border: 1px solid var(--border);
   background: var(--bg3);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: opacity 0.2s;
 }
-.auction-player-chip.passed { opacity: 0.3; border-style: dashed; }
-.auction-player-chip.leading { background: rgba(250,204,21,0.08); border-color: rgba(250,204,21,0.2); }
-.chip-status { font-size: 10px; color: var(--text3); margin-left: 4px; }
-.chip-status.leading-label { color: var(--yellow); }
+.auction-player-chip.passed { opacity: 0.28; border-style: dashed; }
+.auction-player-chip.leading { background: rgba(250,204,21,0.08); border-color: rgba(250,204,21,0.35); }
+.chip-status { font-size: 9px; color: var(--text3); margin-left: 3px; }
+.chip-status.leading-label { color: var(--yellow); font-size: 8px; }
+
+/* Actions area */
 .auction-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 24px 22px;
+  gap: 9px;
+  padding: 0 20px 20px;
 }
+.auction-balance {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.auction-winning-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--yellow);
+  background: rgba(250,204,21,0.10);
+  border: 1px solid rgba(250,204,21,0.25);
+  border-radius: 99px;
+  padding: 1px 8px;
+}
+
+/* Quick-bid buttons — 3-column grid */
+.auction-quick-bids {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.auction-quick-btn {
+  padding: 10px 0;
+  border-radius: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s, border-color 0.12s;
+}
+.auction-quick-btn:hover:not(.auction-quick-btn--disabled) {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+  transform: translateY(-1px);
+}
+.auction-quick-btn:active:not(.auction-quick-btn--disabled) { transform: scale(0.96); }
+.auction-quick-btn--disabled { opacity: 0.28; cursor: not-allowed; }
+
+/* Custom-amount row */
 .auction-bid-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.auction-dollar { font-size: 20px; font-weight: 700; color: var(--green); }
-.auction-bid-input { flex: 1; font-size: 18px; font-weight: 700; text-align: right; }
-.auction-quick-bids { display: flex; gap: 6px; }
-.auction-balance { font-size: 12px; color: var(--text3); text-align: center; }
+.auction-dollar { font-size: 18px; font-weight: 700; color: var(--green); }
+.auction-bid-input { flex: 1; font-size: 16px; font-weight: 700; text-align: right; }
+.auction-pass-btn { width: 100%; justify-content: center; }
+
 .auction-passed-msg {
   text-align: center;
-  padding: 18px 24px 22px;
+  padding: 16px 20px 20px;
   font-size: 14px;
+  font-weight: 600;
   color: var(--text3);
 }
 
@@ -509,16 +603,20 @@ html, body, #root {
   animation: none;
   max-width: 100%;
 }
-.auction-modal--inline .auction-header { padding: 14px 16px 10px; }
-.auction-modal--inline .auction-header h2 { font-size: 18px; }
-.auction-modal--inline .auction-gavel { font-size: 24px; }
-.auction-modal--inline .auction-property { padding: 12px 16px; }
-.auction-modal--inline .auction-flag { font-size: 26px; }
-.auction-modal--inline .auction-name { font-size: 15px; }
-.auction-modal--inline .auction-current-bid { padding: 14px 16px 10px; }
-.auction-modal--inline .auction-bid-amount { font-size: 30px; }
-.auction-modal--inline .auction-players { padding: 0 16px 12px; }
-.auction-modal--inline .auction-actions { padding: 0 16px 16px; }
+.auction-modal--inline .auction-header        { padding: 12px 14px 10px; }
+.auction-modal--inline .auction-header h2     { font-size: 16px; }
+.auction-modal--inline .auction-gavel         { font-size: 20px; }
+.auction-modal--inline .auction-timer         { width: 38px; height: 38px; }
+.auction-modal--inline .auction-timer-ring    { width: 38px; height: 38px; }
+.auction-modal--inline .auction-timer-num     { font-size: 12px; }
+.auction-modal--inline .auction-property      { padding: 10px 14px; }
+.auction-modal--inline .auction-flag          { font-size: 24px; }
+.auction-modal--inline .auction-name          { font-size: 14px; }
+.auction-modal--inline .auction-current-bid   { padding: 12px 14px 8px; }
+.auction-modal--inline .auction-bid-amount    { font-size: 32px; }
+.auction-modal--inline .auction-players       { padding: 0 14px 10px; }
+.auction-modal--inline .auction-actions       { padding: 0 14px 14px; gap: 7px; }
+.auction-modal--inline .auction-quick-btn     { padding: 8px 0; font-size: 12px; }
 
 /* ══════════════════════════════════════════════
    GAME LAYOUT
@@ -936,6 +1034,10 @@ html, body, #root {
 .bs--top.bs--utility .bs__body { padding-bottom: calc(var(--band) + 3px); }
 /* Reserve bottom space for owner avatar badge */
 .bs--owned:not(.bs--corner) .bs__body { padding-bottom: 32px; }
+/* Side tiles: body is rotated 90deg, so visual-bottom = CSS-right (left) for left (right) column.
+   Override padding to create space at the visual bottom so the avatar doesn't cover the name. */
+.bs--left.bs--owned:not(.bs--corner)  .bs__body { padding-bottom: 0; padding-right: 32px; }
+.bs--right.bs--owned:not(.bs--corner) .bs__body { padding-bottom: 0; padding-left:  32px; }
 /* Side tiles: band is an absolute overlay — no padding needed, just center content */
 .bs--left .bs__body,
 .bs--right .bs__body { justify-content: center; gap: 4px; }

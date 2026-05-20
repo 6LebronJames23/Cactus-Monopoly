@@ -58,6 +58,19 @@ export function soundStep() {
   tone(520 + Math.random() * 80, 0.06, 'sine', 0.07);
 }
 
+export function soundBid() {
+  // Rising "ding" — auction increment bell
+  tone(660, 0.06, 'sine', 0.14);
+  tone(880, 0.10, 'sine', 0.18, 0.07);
+}
+
+export function soundAuctionWin() {
+  // Gavel-bang: sharp transient then resonance
+  noise(0.05, 300, 0.28);
+  tone(220, 0.35, 'triangle', 0.20, 0.04);
+  tone(440, 0.25, 'sine',     0.14, 0.12);
+}
+
 export function soundBuy() {
   tone(440, 0.08, 'square', 0.12);
   tone(554, 0.08, 'square', 0.12, 0.09);

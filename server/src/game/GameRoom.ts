@@ -33,6 +33,7 @@ export class GameRoom {
   private botTradeTimer: ReturnType<typeof setTimeout> | null = null;
   // Cooldown: turn number of last trade proposal per bot (prevents spamming same offer)
   private botLastTradeTurn = new Map<string, number>();
+  private auctionTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(io: Server, roomId: string, hostId: string, hostName: string) {
     this.io = io;
@@ -487,15 +488,18 @@ export class GameRoom {
     if (this.state.settings.auction) {
       // Start auction — all non-bankrupt players can bid
       const space = BOARD_SPACES[si];
+      const deadlineMs = Date.now() + 15000;
       this.state.pendingAuction = {
         spaceIndex: si,
         bids: {},
         highestBidderId: null,
         highestBid: 0,
         passedPlayers: [],
+        deadlineMs,
       };
       this.state.turnPhase = 'done'; // current player can still end turn
       this.addLog(`🔨 Auction started for ${space.name}! Minimum bid: $1`);
+      this.scheduleAuctionTimer(15000);
     } else {
       this.state.turnPhase = 'done';
     }
@@ -517,6 +521,9 @@ export class GameRoom {
     auction.bids[playerId] = amount;
     auction.highestBid = amount;
     auction.highestBidderId = playerId;
+    // Reset countdown to 10 s on each new bid
+    auction.deadlineMs = Date.now() + 10000;
+    this.scheduleAuctionTimer(10000);
     const space = BOARD_SPACES[auction.spaceIndex];
     this.addLog(`${player.name} bids $${amount} for ${space.name}.`);
     this.broadcast();
@@ -544,7 +551,19 @@ export class GameRoom {
     return null;
   }
 
+  private scheduleAuctionTimer(ms: number) {
+    if (this.auctionTimer) clearTimeout(this.auctionTimer);
+    this.auctionTimer = setTimeout(() => {
+      this.auctionTimer = null;
+      if (this.state.pendingAuction) {
+        this.finalizeAuction();
+        this.broadcast();
+      }
+    }, ms);
+  }
+
   private finalizeAuction() {
+    if (this.auctionTimer) { clearTimeout(this.auctionTimer); this.auctionTimer = null; }
     const auction = this.state.pendingAuction!;
     const space = BOARD_SPACES[auction.spaceIndex];
     if (auction.highestBidderId) {

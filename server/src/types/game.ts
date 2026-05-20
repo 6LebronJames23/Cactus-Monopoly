@@ -162,6 +162,7 @@ export interface AuctionState {
   highestBidderId: string | null;
   highestBid: number;
   passedPlayers: string[];       // players who passed
+  deadlineMs: number;            // Unix ms when auction auto-ends
 }
 
 export interface TradeOffer {
