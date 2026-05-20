@@ -105,7 +105,10 @@ export default function BoardSpaceCell({
         {isCorner ? (
           <div className={`bs__corner-content bs__corner-content--${space.type}`}>
             <span className="bs__corner-icon">{spaceIcon}</span>
-            <span className="bs__corner-name">{space.name}</span>
+            <span className="bs__corner-name">{space.type === 'jail' ? 'JAIL' : space.name}</span>
+            {space.type === 'jail' && (
+              <span className="bs__corner-sub">Just Visiting</span>
+            )}
             {space.type === 'free_parking' && vacationPot !== undefined && (
               <span className="bs__vacation-pot">
                 {vacationPot > 0 ? `💰 $${vacationPot.toLocaleString()}` : 'No pot yet'}

@@ -64,8 +64,19 @@ io.on('connection', (socket) => {
       return cb(result);
     }
 
-    // Fallback: if game is still in lobby, re-add the player (they were removed on disconnect)
+    // Fallback: if game is still in lobby, try to reclaim existing player slot first
     if (room.state.gamePhase === 'lobby') {
+      // Check if player is already in lobby (e.g. brief reconnect) — update socket ID only
+      const existing = room.state.players.find(p => p.name === playerName && !p.isBot);
+      if (existing) {
+        existing.id = socket.id;
+        if (room.state.hostId === existing.id) room.state.hostId = socket.id;
+        socket.join(roomId.toUpperCase());
+        (socket as any).roomId = roomId.toUpperCase();
+        (socket as any).playerName = playerName;
+        room.broadcast();
+        return cb({ ok: true, state: room.state, myId: socket.id });
+      }
       const ok = room.addPlayer(socket.id, playerName);
       if (ok) {
         socket.join(roomId.toUpperCase());

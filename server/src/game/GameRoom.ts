@@ -322,12 +322,10 @@ export class GameRoom {
   private movePlayer(player: Player, steps: number) {
     const oldPos = player.position;
     player.position = (player.position + steps) % TOTAL_SPACES;
-    // Collect GO salary if passed or landed on GO
-    const crossedGo = player.position < oldPos || player.position === 0;
-    if (crossedGo && player.position !== 0) {
-      // Passing through GO: $200
+    // Passed GO (wrapped around and didn't land on it)
+    if (player.position !== 0 && (player.position < oldPos || oldPos + steps >= TOTAL_SPACES)) {
       this.addMoney(player, GO_SALARY);
-      this.addLog(`${player.name} passed GO — collected $${GO_SALARY}! 💵`);
+      this.addLog(`💵 ${player.name} passed GO and collected $${GO_SALARY}!`);
     }
     this.landOnSpace(player);
   }

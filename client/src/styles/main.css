@@ -29,8 +29,8 @@
   --cs: 140px;   /* corner size  */
   --band: 32px;  /* color band   */
   /* Tile colors — warm tan */
-  --tile-bg:      #f0e6d0;
-  --tile-bg2:     #ede0c4;
+  --tile-bg:      #e8d5a8;
+  --tile-bg2:     #dfc99a;
   --tile-text:    #080808;
   --tile-text2:   #374151;
   --tile-border:  rgba(0,0,0,0.08);
@@ -934,12 +934,9 @@ html, body, #root {
 .bs--top.bs--property .bs__body,
 .bs--top.bs--airport .bs__body,
 .bs--top.bs--utility .bs__body { padding-bottom: calc(var(--band) + 3px); }
-.bs--left.bs--property .bs__body,
-.bs--left.bs--airport .bs__body,
-.bs--left.bs--utility .bs__body { padding-right: calc(var(--band) + 3px); }
-.bs--right.bs--property .bs__body,
-.bs--right.bs--airport .bs__body,
-.bs--right.bs--utility .bs__body { padding-left: calc(var(--band) + 3px); }
+/* Side tiles: band is an absolute overlay — no padding needed, just center content */
+.bs--left .bs__body,
+.bs--right .bs__body { justify-content: center; gap: 4px; }
 /* Rotate text for side columns so it reads toward the center.
    The body must be positioned absolutely at tile center with its
    dimensions swapped (sw×sh → sh×sw) so it fills the tile after rotation. */
@@ -1024,14 +1021,22 @@ html, body, #root {
   text-transform: uppercase;
   text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
+.bs__corner-sub {
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 
 /* Special tile backgrounds — light-tinted */
-.bs--go           { background: #f0fdf4 !important; border-color: rgba(34,197,94,0.15); }
-.bs--jail         { background: #fefce8 !important; border-color: rgba(234,179,8,0.15); }
-.bs--free_parking { background: linear-gradient(160deg, #e0f2ff, #dbeafe) !important; }
-.bs--go_to_jail   { background: #fff1f2 !important; }
-.bs--treasure     { background: #fffbeb !important; }
-.bs--surprise     { background: #faf5ff !important; }
+.bs--go           { background: #d4ebd8 !important; border-color: rgba(34,197,94,0.2); }
+.bs--jail         { background: #e8ddb0 !important; border-color: rgba(234,179,8,0.2); }
+.bs--free_parking { background: linear-gradient(160deg, #c5dff5, #bfd4f0) !important; }
+.bs--go_to_jail   { background: #edc8c8 !important; }
+.bs--treasure     { background: #e8d8a0 !important; }
+.bs--surprise     { background: #dccff0 !important; }
 .bs--tax          { background: #fff1f2 !important; }
 
 /* Corner tiles stay dark and vivid — they're landmarks */
@@ -1467,6 +1472,33 @@ html, body, #root {
   flex-direction: column;
   gap: 6px;
 }
+.side-actions {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 10px 8px;
+}
+.side-log {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.side-log-entry {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.35;
+  padding: 1px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.side-log-entry--latest {
+  color: var(--text2);
+  font-weight: 600;
+}
+.side-log-entry:last-child { border-bottom: none; }
 /* Actions panel in left sidebar */
 .side-actions {
   flex-shrink: 0;
@@ -1892,25 +1924,29 @@ html, body, #root {
 }
 .trade-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 14px 24px 22px;
+  padding: 12px 16px 16px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .btn-action {
-  padding: 10px 20px;
-  background: var(--bg3);
+  padding: 9px 18px;
+  background: transparent;
   border: 1px solid var(--border2);
   border-radius: var(--radius);
-  color: var(--text2);
-  font-size: 14px;
+  color: var(--text3);
+  font-size: 13px;
   font-weight: 600;
   font-family: var(--font);
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-action:hover { background: var(--bg4); color: var(--text); border-color: rgba(255,255,255,0.2); }
+.btn-action:hover { background: var(--bg3); color: var(--text); border-color: rgba(255,255,255,0.25); }
+.trade-inline .trade-footer { padding: 10px 0 4px; flex-direction: column; gap: 6px; }
+.trade-inline .trade-footer .btn-action,
+.trade-inline .trade-footer .btn-primary { width: 100%; justify-content: center; }
 .trade-waiting-banner {
   background: var(--bg2);
   border: 1px solid var(--border2);

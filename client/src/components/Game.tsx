@@ -204,12 +204,15 @@ export default function Game({ gameState, myId, onLeave }: Props) {
 
   return (
     <div className="game-layout">
-      {/* LEFT: player cards + action controls */}
+      {/* LEFT: player cards, actions, log, stats */}
       <aside className="side-panel side-panel--left">
-        <PlayerPanel gameState={gameState} myId={myId} onSelectSpace={setSelectedSpace} />
-        {gameState.gamePhase === 'playing' && (
-          <div className="side-actions">{actionsSlot}</div>
-        )}
+        <PlayerPanel
+          gameState={gameState}
+          myId={myId}
+          onSelectSpace={setSelectedSpace}
+          actionsSlot={gameState.gamePhase === 'playing' ? actionsSlot : null}
+          recentLog={gameState.log.slice(0, 5)}
+        />
       </aside>
 
       {/* CENTER: board (actions embedded inside board center) */}
@@ -229,7 +232,6 @@ export default function Game({ gameState, myId, onLeave }: Props) {
               isRolling={isRolling}
               onSpaceClick={setSelectedSpace}
               onRoll={isMyTurn && turnPhase === 'roll' && !isRolling && !me?.inJail ? handleRoll : undefined}
-              recentLog={gameState.log.slice(0, 4)}
             />
           </div>
         </div>
