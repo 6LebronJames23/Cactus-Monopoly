@@ -28,9 +28,9 @@
   --sh: 122px;   /* space height */
   --cs: 140px;   /* corner size  */
   --band: 32px;  /* color band   */
-  /* Tile colors — light body for readability */
-  --tile-bg:      #ffffff;
-  --tile-bg2:     #f8faff;
+  /* Tile colors — warm tan */
+  --tile-bg:      #f0e6d0;
+  --tile-bg2:     #ede0c4;
   --tile-text:    #080808;
   --tile-text2:   #374151;
   --tile-border:  rgba(0,0,0,0.08);
@@ -891,7 +891,7 @@ html, body, #root {
   align-items: stretch;
   cursor: pointer;
   border: 1px solid rgba(0,0,0,0.08);
-  background: #fff;
+  background: var(--tile-bg);
   overflow: hidden;
   transition: filter 0.12s;
   flex-shrink: 0;
@@ -940,9 +940,19 @@ html, body, #root {
 .bs--right.bs--property .bs__body,
 .bs--right.bs--airport .bs__body,
 .bs--right.bs--utility .bs__body { padding-left: calc(var(--band) + 3px); }
-/* Rotate text for side columns so it reads toward the center */
-.bs__body--left  { transform: rotate(90deg);  }
-.bs__body--right { transform: rotate(-90deg); }
+/* Rotate text for side columns so it reads toward the center.
+   The body must be positioned absolutely at tile center with its
+   dimensions swapped (sw×sh → sh×sw) so it fills the tile after rotation. */
+.bs--left .bs__body,
+.bs--right .bs__body {
+  position: absolute;
+  width:  var(--sw);
+  height: var(--sh);
+  top:  50%;
+  left: 50%;
+}
+.bs__body--left  { transform: translate(-50%, -50%) rotate(90deg);  }
+.bs__body--right { transform: translate(-50%, -50%) rotate(-90deg); }
 
 .bs__icon  { font-size: 22px; line-height: 1; }
 .bs__icon--flag { font-size: 28px; }
@@ -1457,6 +1467,28 @@ html, body, #root {
   flex-direction: column;
   gap: 6px;
 }
+/* Actions panel in left sidebar */
+.side-actions {
+  flex-shrink: 0;
+  padding: 10px 8px 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.side-actions .bc__action-group { width: 100%; }
+.side-actions .bc__action-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  width: 100%;
+  justify-content: center;
+}
+.side-actions .bc__action-row { flex-direction: column; gap: 6px; width: 100%; }
+.side-actions .bc__action-row .bc__action-btn { width: 100%; }
+.side-actions .bc__waiting { font-size: 12px; }
+.side-actions .bc__bankrupt-btn,
+.side-actions .bc__leave-btn { font-size: 11px; }
 .player-card {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -1861,10 +1893,24 @@ html, body, #root {
 .trade-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
   padding: 14px 24px 22px;
   border-top: 1px solid var(--border);
 }
+.btn-action {
+  padding: 10px 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-action:hover { background: var(--bg4); color: var(--text); border-color: rgba(255,255,255,0.2); }
 .trade-waiting-banner {
   background: var(--bg2);
   border: 1px solid var(--border2);

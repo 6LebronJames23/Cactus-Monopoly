@@ -66,10 +66,12 @@ export class GameRoom {
     if (this.state.players.length >= MAX_PLAYERS) return false;
     if (this.state.gamePhase !== 'lobby') return false;
     const i = this.state.players.length;
+    const usedTokens = new Set(this.state.players.map(p => p.token));
+    const token = PLAYER_TOKENS.find(t => !usedTokens.has(t)) ?? PLAYER_TOKENS[i % PLAYER_TOKENS.length];
     this.state.players.push({
       id, name,
       color: PLAYER_COLORS[i],
-      token: PLAYER_TOKENS[i],
+      token,
       position: 0,
       money: this.state.settings.startingCash,
       properties: [],
@@ -137,10 +139,10 @@ export class GameRoom {
 
     const idx = this.state.players.findIndex(p => p.id === botId);
     this.state.players.splice(idx, 1);
-    // Re-assign colors & tokens after removal
+    // Re-assign colors after removal, preserve custom tokens for real players
     this.state.players.forEach((p, i) => {
       p.color = PLAYER_COLORS[i];
-      p.token = PLAYER_TOKENS[i];
+      if (p.isBot) p.token = PLAYER_TOKENS[i];
     });
 
     this.broadcast();
@@ -248,8 +250,8 @@ export class GameRoom {
         const j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
-      // Re-assign colors & tokens to preserve visual consistency with order
-      arr.forEach((p, i) => { p.color = PLAYER_COLORS[i]; p.token = PLAYER_TOKENS[i]; });
+      // Re-assign colors to reflect new order; preserve custom token choices
+      arr.forEach((p, i) => { p.color = PLAYER_COLORS[i]; });
     }
     this.state.gamePhase = 'playing';
     this.state.turnPhase = 'roll';
@@ -320,10 +322,12 @@ export class GameRoom {
   private movePlayer(player: Player, steps: number) {
     const oldPos = player.position;
     player.position = (player.position + steps) % TOTAL_SPACES;
-    // Collect GO salary if passed GO
-    if (player.position < oldPos || (oldPos + steps) >= TOTAL_SPACES) {
+    // Collect GO salary if passed or landed on GO
+    const crossedGo = player.position < oldPos || player.position === 0;
+    if (crossedGo && player.position !== 0) {
+      // Passing through GO: $200
       this.addMoney(player, GO_SALARY);
-      this.addLog(`${player.name} passed GO and collected $${GO_SALARY}!`);
+      this.addLog(`${player.name} passed GO — collected $${GO_SALARY}! 💵`);
     }
     this.landOnSpace(player);
   }
@@ -337,6 +341,9 @@ export class GameRoom {
 
     switch (space.type) {
       case 'go':
+        // Landing ON Go gives $300 (passing gives $200 separately)
+        this.addMoney(player, 300);
+        this.addLog(`${player.name} landed on GO — collected $300! 🎉`);
         this.state.turnPhase = 'done';
         break;
 
@@ -346,6 +353,8 @@ export class GameRoom {
         break;
 
       case 'jail':
+        // Just visiting — no penalty
+        this.addLog(`${player.name} is just visiting Jail. 👋`);
         this.state.turnPhase = 'done';
         break;
 

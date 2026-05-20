@@ -204,9 +204,12 @@ export default function Game({ gameState, myId, onLeave }: Props) {
 
   return (
     <div className="game-layout">
-      {/* LEFT: player cards */}
+      {/* LEFT: player cards + action controls */}
       <aside className="side-panel side-panel--left">
         <PlayerPanel gameState={gameState} myId={myId} onSelectSpace={setSelectedSpace} />
+        {gameState.gamePhase === 'playing' && (
+          <div className="side-actions">{actionsSlot}</div>
+        )}
       </aside>
 
       {/* CENTER: board (actions embedded inside board center) */}
@@ -226,7 +229,6 @@ export default function Game({ gameState, myId, onLeave }: Props) {
               isRolling={isRolling}
               onSpaceClick={setSelectedSpace}
               onRoll={isMyTurn && turnPhase === 'roll' && !isRolling && !me?.inJail ? handleRoll : undefined}
-              actionsSlot={actionsSlot}
               recentLog={gameState.log.slice(0, 4)}
             />
           </div>

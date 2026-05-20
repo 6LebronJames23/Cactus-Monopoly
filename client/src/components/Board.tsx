@@ -70,9 +70,9 @@ export default function Board({ gameState, myId, visualPositions, isRolling, onS
           {/* CENTER */}
           <div className="board__center">
             <div className="bc__brand">
-              <div className="bc__globe">🌍</div>
-              <div className="bc__title">MONOPOLY</div>
-              <div className="bc__subtitle">WORLDWIDE</div>
+              <div className="bc__globe">🌵</div>
+              <div className="bc__title">CACTUS</div>
+              <div className="bc__subtitle">MONOPOLY</div>
             </div>
 
             <div className="bc__dice-area">
