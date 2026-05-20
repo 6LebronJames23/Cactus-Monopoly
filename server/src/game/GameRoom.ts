@@ -1039,7 +1039,9 @@ export class GameRoom {
     this.scheduleBotTradeResponse();
   }
 
-  // ── Bot AI ───────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
+  // BOT AI — SMART EDITION
+  // ════════════════════════════════════════════════════════════════════════
 
   private clearBotTimers() {
     if (this.botActionTimer) { clearTimeout(this.botActionTimer); this.botActionTimer = null; }
@@ -1049,44 +1051,164 @@ export class GameRoom {
   }
 
   private scheduleBotAction() {
-    if (this.botActionTimer) { clearTimeout(this.botActionTimer); this.botActionTimer = null; }
-    if (this.state.gamePhase !== 'playing') return;
-
     const cp = this.currentPlayer();
     if (!cp.isBot || cp.bankrupt) return;
-
-    const phase = this.state.turnPhase;
     const botId = cp.id;
+    const phase = this.state.turnPhase;
 
     if (phase === 'roll') {
-      // In jail: prefer using card, then paying fine on later turns, then just rolling
       if (cp.inJail) {
+        // Late game: staying in jail avoids expensive rent squares
+        if (this.isLateGame()) {
+          const exposure = this.maxRentExposure(botId);
+          if (exposure > 200 && cp.jailTurns < 3) {
+            this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.rollDice(botId); }, 1400);
+            return;
+          }
+        }
         if (cp.getOutOfJailCards > 0) {
           this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.useJailCard(botId); }, 1200);
           return;
         }
-        if (cp.money >= JAIL_FINE && cp.jailTurns >= 1) {
+        if (cp.money >= JAIL_FINE + this.maxRentExposure(botId) && cp.jailTurns >= 1) {
           this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.payJailFine(botId); }, 1200);
           return;
         }
       }
-      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.rollDice(botId); }, 1500);
+      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.rollDice(botId); }, 1400);
 
     } else if (phase === 'buy_decision') {
-      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.botBuyDecision(botId); }, 1000);
+      this.botActionTimer = setTimeout(() => { this.botActionTimer = null; this.botBuyDecision(botId); }, 900);
 
     } else if (phase === 'done') {
       this.botActionTimer = setTimeout(() => {
         this.botActionTimer = null;
-        this.botBuildHouses(botId);
-        // Occasionally propose a trade (20% chance per turn if no trade pending)
-        if (!this.state.pendingTrade && Math.random() < 0.20) {
+        this.botManageProperties(botId);
+        if (!this.state.pendingTrade && Math.random() < 0.30) {
           this.botProposeTrade(botId);
         }
         this.endTurn(botId);
-      }, 900);
+      }, 800);
     }
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private isLateGame(): boolean {
+    return this.state.players.some(p => {
+      if (p.bankrupt) return false;
+      return p.properties.some(si => {
+        const space = BOARD_SPACES[si];
+        if (!space.group) return false;
+        const grp = getGroupSpaces(space.group);
+        return grp.every(i => this.state.ownedProperties[i]?.ownerId === p.id)
+          && (this.state.ownedProperties[si]?.houses ?? 0) >= 2;
+      });
+    });
+  }
+
+  private groupOwned(group: string, playerId: string): number {
+    return getGroupSpaces(group).filter(
+      i => this.state.ownedProperties[i]?.ownerId === playerId
+    ).length;
+  }
+
+  /** Strategic value of GAINING property si for botId */
+  private propValue(si: number, botId: string): number {
+    const space = BOARD_SPACES[si];
+    if (!space.price) return 0;
+    let val = space.price;
+    const owned = this.state.ownedProperties[si];
+
+    if (space.group) {
+      const grp = getGroupSpaces(space.group);
+      const botInGroup = this.groupOwned(space.group, botId);
+      const completesMonopoly = botInGroup === grp.length - 1;
+      const hasPresence = botInGroup > 0;
+      const opponentNearlyClosed = this.state.players.some(p => {
+        if (p.id === botId || p.bankrupt) return false;
+        return this.groupOwned(space.group!, p.id) >= grp.length - 1;
+      });
+
+      if (completesMonopoly)      val *= 3.0;
+      else if (hasPresence)       val *= 1.6;
+      else if (opponentNearlyClosed) val *= 1.4;
+      else                        val *= 0.9;
+    } else if (space.type === 'airport') {
+      const ownedCount = getAirportSpaces().filter(
+        i => this.state.ownedProperties[i]?.ownerId === botId
+      ).length;
+      val *= 0.85 + ownedCount * 0.25;
+    } else if (space.type === 'utility') {
+      const ownedCount = getUtilitySpaces().filter(
+        i => this.state.ownedProperties[i]?.ownerId === botId
+      ).length;
+      val *= ownedCount >= 1 ? 1.15 : 0.65;
+    }
+
+    if (owned?.houses && owned.houses > 0) {
+      val += (owned.houses === 5 ? 1 : owned.houses) * (space.houseCost ?? 0) * 0.7;
+    }
+    return val;
+  }
+
+  /** Strategic cost of LOSING property si for botId */
+  private propGiveValue(si: number, botId: string): number {
+    const space = BOARD_SPACES[si];
+    if (!space.price) return 0;
+    let val = space.price;
+    const owned = this.state.ownedProperties[si];
+
+    if (space.group) {
+      const grp = getGroupSpaces(space.group);
+      const botInGroup = this.groupOwned(space.group, botId);
+      const handOpponentMonopoly = this.state.players.some(p => {
+        if (p.id === botId || p.bankrupt) return false;
+        return this.groupOwned(space.group!, p.id) === grp.length - 1;
+      });
+
+      if (botInGroup === grp.length)       val *= 4.0; // giving from completed monopoly
+      else if (botInGroup === grp.length - 1) val *= 2.5; // giving away last piece needed
+      else if (handOpponentMonopoly)        val *= 3.0; // completing opponent's monopoly
+    }
+
+    if (owned?.houses && owned.houses > 0) {
+      val += (owned.houses === 5 ? 1 : owned.houses) * (space.houseCost ?? 0);
+    }
+    return val;
+  }
+
+  private maxRentExposure(botId: string): number {
+    let max = 0;
+    for (const p of this.state.players) {
+      if (p.id === botId || p.bankrupt) continue;
+      for (const si of p.properties) {
+        const owned = this.state.ownedProperties[si];
+        if (!owned || owned.mortgaged) continue;
+        const space = BOARD_SPACES[si];
+        const rent = space.rents?.[owned.houses ?? 0] ?? 0;
+        if (rent > max) max = rent;
+      }
+    }
+    return max;
+  }
+
+  private botMortgageForCash(botId: string, targetCash: number): void {
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot) return;
+    const candidates = bot.properties
+      .filter(si => {
+        const owned = this.state.ownedProperties[si];
+        return owned && !owned.mortgaged && (owned.houses ?? 0) === 0;
+      })
+      .sort((a, b) => this.propValue(a, botId) - this.propValue(b, botId));
+    for (const si of candidates) {
+      if (bot.money >= targetCash) break;
+      this.mortgageProperty(botId, si);
+    }
+  }
+
+  // ── Buy decision ──────────────────────────────────────────────────────────
 
   private botBuyDecision(botId: string) {
     if (this.state.turnPhase !== 'buy_decision') return;
@@ -1096,52 +1218,88 @@ export class GameRoom {
     if (si === null) return;
     const space = BOARD_SPACES[si];
     const price = space.price ?? 0;
+    const strVal = this.propValue(si, botId);
+    const exposure = this.maxRentExposure(botId);
+    const safetyBuffer = Math.max(200, exposure * 1.5);
 
-    let minBuffer = 1.5;
-
-    if (space.type === 'property') {
-      const groupSpaces = getGroupSpaces(space.group!);
-      const willCompleteMonopoly = groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === botId);
-      const hasGroupMember = groupSpaces.some(i => i !== si && this.state.ownedProperties[i]?.ownerId === botId);
-      minBuffer = willCompleteMonopoly ? 1.0 : hasGroupMember ? 1.2 : 1.5;
-    } else if (space.type === 'airport') {
-      const ownedAirports = getAirportSpaces().filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
-      minBuffer = ownedAirports >= 1 ? 1.1 : 1.4;
-    } else if (space.type === 'utility') {
-      const ownedUtils = getUtilitySpaces().filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
-      minBuffer = ownedUtils >= 1 ? 1.1 : 1.4;
-    }
-
-    if (bot.money >= price * minBuffer) {
+    if (bot.money - price >= safetyBuffer || strVal >= price * 2.0) {
+      this.buyProperty(botId);
+    } else if (bot.money - price >= 100 && strVal >= price * 1.5) {
       this.buyProperty(botId);
     } else {
       this.declineBuy(botId);
     }
   }
 
+  // ── Property management ───────────────────────────────────────────────────
+
+  private botManageProperties(botId: string) {
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot) return;
+    this.botUnmortgage(botId);
+    this.botBuildHouses(botId);
+    const exposure = this.maxRentExposure(botId);
+    const minCash = Math.max(150, exposure);
+    if (bot.money < minCash) this.botMortgageForCash(botId, minCash + 100);
+  }
+
+  private botUnmortgage(botId: string) {
+    const bot = this.state.players.find(p => p.id === botId);
+    if (!bot) return;
+    const exposure = this.maxRentExposure(botId);
+    const safetyBuffer = Math.max(400, exposure * 2);
+    const mortgaged = bot.properties
+      .filter(si => this.state.ownedProperties[si]?.mortgaged)
+      .sort((a, b) => this.propValue(b, botId) - this.propValue(a, botId));
+    for (const si of mortgaged) {
+      const space = BOARD_SPACES[si];
+      const cost = Math.ceil((space.mortgageValue ?? 0) * 1.1);
+      if (bot.money - cost >= safetyBuffer) this.unmortgageProperty(botId, si);
+    }
+  }
+
   private botBuildHouses(botId: string) {
     const bot = this.state.players.find(p => p.id === botId);
     if (!bot) return;
-    const BUFFER = 350;
+    const exposure = this.maxRentExposure(botId);
+    const BUFFER = Math.max(300, exposure * 1.2);
+
+    interface BuildTarget { si: number; roi: number; }
+    const buildable: BuildTarget[] = [];
+    for (const si of bot.properties) {
+      const space = BOARD_SPACES[si];
+      if (space.type !== 'property' || !space.group) continue;
+      const owned = this.state.ownedProperties[si];
+      if (!owned || owned.mortgaged || owned.houses >= 5) continue;
+      const grp = getGroupSpaces(space.group);
+      if (!grp.every(i => this.state.ownedProperties[i]?.ownerId === botId)) continue;
+      const nextHouses = (owned.houses ?? 0) + 1;
+      const rentGain = (space.rents?.[nextHouses] ?? 0) - (space.rents?.[owned.houses ?? 0] ?? 0);
+      buildable.push({ si, roi: rentGain / (space.houseCost ?? 1) });
+    }
+    buildable.sort((a, b) => b.roi - a.roi);
+
     let keepBuilding = true;
     let safety = 0;
-    while (keepBuilding && safety < 30) {
+    while (keepBuilding && safety < 40) {
       keepBuilding = false;
       safety++;
-      for (const si of [...bot.properties]) {
-        const space = BOARD_SPACES[si];
-        if (space.type !== 'property') continue;
+      for (const { si } of buildable) {
         const owned = this.state.ownedProperties[si];
-        if (!owned || owned.mortgaged || owned.houses >= 5) continue;
-        const groupSpaces = getGroupSpaces(space.group!);
-        const ownsAll = groupSpaces.every(i => this.state.ownedProperties[i]?.ownerId === botId);
-        if (!ownsAll) continue;
+        if (!owned || owned.houses >= 5) continue;
+        const space = BOARD_SPACES[si];
+        // Even-building rule
+        const grp = getGroupSpaces(space.group!);
+        const minHouses = Math.min(...grp.map(i => this.state.ownedProperties[i]?.houses ?? 0));
+        if ((owned.houses ?? 0) > minHouses) continue;
         if (bot.money - (space.houseCost ?? 0) < BUFFER) continue;
         const err = this.buyHouse(botId, si);
-        if (!err) { keepBuilding = true; break; } // break to re-check even-building
+        if (!err) { keepBuilding = true; break; }
       }
     }
   }
+
+  // ── Auction ───────────────────────────────────────────────────────────────
 
   private scheduleBotAuctions() {
     if (!this.state.pendingAuction) {
@@ -1154,40 +1312,46 @@ export class GameRoom {
     this.state.players.forEach(bot => {
       if (!bot.isBot || bot.bankrupt) return;
       if (auction.passedPlayers.includes(bot.id)) return;
-      if (auction.highestBidderId === bot.id) return; // already winning
-      if (this.botAuctionTimers.has(bot.id)) return;  // already scheduled
+      if (auction.highestBidderId === bot.id) return;
+      if (this.botAuctionTimers.has(bot.id)) return;
 
       const t = setTimeout(() => {
         this.botAuctionTimers.delete(bot.id);
         if (!this.state.pendingAuction) return;
-        const auc = this.state.pendingAuction;
-        const space = BOARD_SPACES[auc.spaceIndex];
-        const price = space.price ?? 100;
+        const auc  = this.state.pendingAuction;
+        const si   = auc.spaceIndex;
+        const space = BOARD_SPACES[si];
+        const strVal = this.propValue(si, bot.id);
 
-        // Bid higher if completing a monopoly or airport set
-        const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
-        const willCompleteMonopoly = groupSpaces.length > 0 &&
-          groupSpaces.every(i => i === auc.spaceIndex || auc.highestBidderId === bot.id ||
-            this.state.ownedProperties[i]?.ownerId === bot.id);
-        const hasGroupMember = groupSpaces.some(i => this.state.ownedProperties[i]?.ownerId === bot.id);
-        const airports = getAirportSpaces();
-        const ownedAirports = airports.filter(i => this.state.ownedProperties[i]?.ownerId === bot.id).length;
+        // Blocking bonus: if opponent would complete monopoly, bid above our own value
+        let blockBonus = 0;
+        for (const opp of this.state.players) {
+          if (opp.id === bot.id || opp.bankrupt) continue;
+          const oppVal = this.propValue(si, opp.id);
+          if (oppVal > strVal * 1.5) {
+            blockBonus = Math.min(strVal * 0.4, (oppVal - strVal) * 0.5);
+            break;
+          }
+        }
 
-        let bidCap = price * (willCompleteMonopoly ? 1.2 : hasGroupMember ? 0.95 : ownedAirports > 0 && space.type === 'airport' ? 0.9 : 0.65);
-        bidCap = Math.min(bidCap, bot.money - 200);
+        const exposure = this.maxRentExposure(bot.id);
+        const maxAffordable = Math.max(0, bot.money - Math.max(200, exposure));
+        const bidCap = Math.min(maxAffordable, strVal + blockBonus);
+        const nextBid = Math.max(auc.highestBid + 10, Math.floor((space.price ?? 100) * 0.1));
 
-        const currentHigh = auc.highestBid;
-        const nextBid = Math.max(currentHigh + 5, Math.floor(price * 0.25));
-        if (nextBid > bidCap || bot.money < nextBid) {
+        if (nextBid > bidCap) {
           this.passAuction(bot.id);
         } else {
-          this.placeBid(bot.id, nextBid);
+          const bid = Math.min(bidCap, nextBid + Math.floor(Math.random() * 20));
+          this.placeBid(bot.id, bid);
         }
-      }, 1200 + Math.random() * 800);
+      }, 1000 + Math.random() * 1000);
 
       this.botAuctionTimers.set(bot.id, t);
     });
   }
+
+  // ── Trade response ────────────────────────────────────────────────────────
 
   private scheduleBotTradeResponse() {
     if (!this.state.pendingTrade) return;
@@ -1198,8 +1362,7 @@ export class GameRoom {
     this.botTradeTimer = setTimeout(() => {
       this.botTradeTimer = null;
       if (!this.state.pendingTrade || this.state.pendingTrade.id !== trade.id) return;
-      const accept = this.botEvaluateTrade(bot, trade);
-      if (accept) {
+      if (this.botEvaluateTrade(bot, trade)) {
         this.acceptTrade(bot.id, trade.id);
       } else {
         this.declineTrade(bot.id, trade.id);
@@ -1207,92 +1370,147 @@ export class GameRoom {
     }, 1500 + Math.random() * 1000);
   }
 
-  /** Returns true if the trade is favorable (or neutral) for bot */
   private botEvaluateTrade(bot: Player, trade: TradeOffer): boolean {
     const isReceiver = trade.toId === bot.id;
     const receiving = {
       properties: isReceiver ? trade.requestProperties : trade.offerProperties,
-      money: isReceiver ? trade.requestMoney : trade.offerMoney,
-      jailCards: isReceiver ? trade.requestJailCards : trade.offerJailCards,
+      money:      isReceiver ? trade.requestMoney      : trade.offerMoney,
+      jailCards:  isReceiver ? trade.requestJailCards  : trade.offerJailCards,
     };
     const giving = {
-      properties: isReceiver ? trade.offerProperties : trade.requestProperties,
-      money: isReceiver ? trade.offerMoney : trade.requestMoney,
-      jailCards: isReceiver ? trade.offerJailCards : trade.requestJailCards,
+      properties: isReceiver ? trade.offerProperties   : trade.requestProperties,
+      money:      isReceiver ? trade.offerMoney         : trade.requestMoney,
+      jailCards:  isReceiver ? trade.offerJailCards     : trade.requestJailCards,
     };
 
-    const propValue = (indices: number[]) => indices.reduce((sum, si) => {
-      const space = BOARD_SPACES[si];
-      const base = space.price ?? 0;
-      // Bonus if completing a monopoly
-      const groupSpaces = space.group ? getGroupSpaces(space.group) : [];
-      const alreadyOwned = groupSpaces.filter(i => i !== si && this.state.ownedProperties[i]?.ownerId === bot.id).length;
-      const completesGroup = alreadyOwned === groupSpaces.length - 1;
-      return sum + base * (completesGroup ? 1.6 : alreadyOwned > 0 ? 1.2 : 1.0);
-    }, 0);
-
-    const receiveValue = propValue(receiving.properties) + receiving.money + receiving.jailCards * 50;
-    const giveValue    = propValue(giving.properties)    + giving.money    + giving.jailCards * 50;
-
-    // Accept if receiving at least 90% of value given, or completing a monopoly
-    const completesMonopoly = receiving.properties.some(si => {
+    // Hard veto: don't hand opponent a monopoly
+    const handsOpponentMonopoly = giving.properties.some(si => {
       const space = BOARD_SPACES[si];
       if (!space.group) return false;
-      const groupSpaces = getGroupSpaces(space.group);
-      return groupSpaces.every(i => i === si || this.state.ownedProperties[i]?.ownerId === bot.id);
+      const grp = getGroupSpaces(space.group);
+      return this.state.players.some(
+        p => p.id !== bot.id && !p.bankrupt
+          && this.groupOwned(space.group!, p.id) === grp.length - 1
+      );
+    });
+    if (handsOpponentMonopoly) return false;
+
+    const receiveVal = receiving.properties.reduce((s, si) => s + this.propValue(si, bot.id), 0)
+      + receiving.money + receiving.jailCards * 75;
+    const giveVal = giving.properties.reduce((s, si) => s + this.propGiveValue(si, bot.id), 0)
+      + giving.money + giving.jailCards * 75;
+
+    // Liquidity check
+    const cashAfter = bot.money - giving.money + receiving.money;
+    if (cashAfter < Math.max(100, this.maxRentExposure(bot.id) * 0.5)) return false;
+
+    // More lenient threshold if this completes our monopoly
+    const completesOurMonopoly = receiving.properties.some(si => {
+      const space = BOARD_SPACES[si];
+      if (!space.group) return false;
+      const grp = getGroupSpaces(space.group);
+      return grp.every(i => i === si || this.state.ownedProperties[i]?.ownerId === bot.id);
     });
 
-    if (completesMonopoly) return receiveValue >= giveValue * 0.75;
-    return receiveValue >= giveValue * 0.9;
+    const threshold = completesOurMonopoly ? 0.72 : 0.86;
+    return receiveVal >= giveVal * threshold;
   }
 
-  /** Bot tries to propose a beneficial trade at end of turn */
+  // ── Trade proposal ────────────────────────────────────────────────────────
+
   private botProposeTrade(botId: string) {
-    if (this.state.pendingTrade) return; // trade already pending
+    if (this.state.pendingTrade) return;
     const bot = this.state.players.find(p => p.id === botId);
-    if (!bot || bot.bankrupt) return;
+    if (!bot || bot.bankrupt || bot.properties.length === 0) return;
 
     const activePlayers = this.state.players.filter(p => !p.bankrupt && p.id !== botId);
     if (!activePlayers.length) return;
 
-    // Find the best trade opportunity: bot gives something it doesn't need,
-    // gets something that completes/advances a monopoly
-    for (const target of activePlayers) {
-      for (const wantSi of target.properties) {
-        const space = BOARD_SPACES[wantSi];
-        if (!space.group) continue;
-        const owned = this.state.ownedProperties[wantSi];
-        if (owned?.mortgaged) continue;
-        const groupSpaces = getGroupSpaces(space.group);
-        const botOwnsInGroup = groupSpaces.filter(i => this.state.ownedProperties[i]?.ownerId === botId).length;
-        if (botOwnsInGroup === 0) continue; // no stake in this group
+    interface Candidate {
+      toId: string;
+      offerProperties: number[]; offerMoney: number;
+      requestProperties: number[]; requestMoney: number;
+      score: number;
+    }
+    const candidates: Candidate[] = [];
 
-        // Find something to offer that target might want
+    for (const target of activePlayers) {
+      // ── Swap trades ──────────────────────────────────────────────────────
+      for (const wantSi of target.properties) {
+        const wantOwned = this.state.ownedProperties[wantSi];
+        if (wantOwned?.mortgaged || (wantOwned?.houses ?? 0) > 0) continue;
+        const wantValForBot = this.propValue(wantSi, botId);
+        const wantSpace = BOARD_SPACES[wantSi];
+        if (wantValForBot < (wantSpace.price ?? 0) * 1.3) continue;
+
         for (const offerSi of bot.properties) {
-          const offerSpace = BOARD_SPACES[offerSi];
           const offerOwned = this.state.ownedProperties[offerSi];
           if (offerOwned?.mortgaged || (offerOwned?.houses ?? 0) > 0) continue;
-          if (offerSpace.group === space.group) continue; // don't offer from same group
+          const offerSpace = BOARD_SPACES[offerSi];
+          // Don't give away a monopoly-completing piece to target
+          if (offerSpace.group) {
+            const grp = getGroupSpaces(offerSpace.group);
+            if (this.groupOwned(offerSpace.group, target.id) === grp.length - 1) continue;
+          }
+          if (this.propGiveValue(offerSi, botId) > wantValForBot * 1.3) continue;
 
-          // Offer a fair trade: property price parity
-          const priceDiff = (offerSpace.price ?? 0) - (space.price ?? 0);
-          const offerMoney = priceDiff > 0 ? 0 : Math.min(-priceDiff, Math.floor(bot.money * 0.3));
-          const requestMoney = priceDiff > 0 ? Math.min(priceDiff, Math.floor(target.money * 0.3)) : 0;
+          const targetLoses = this.propValue(wantSi, target.id);
+          const targetGains = this.propValue(offerSi, target.id);
+          const deficit  = targetLoses - targetGains;
+          const surplus  = targetGains - targetLoses;
+          const offerMoney   = deficit > 0 ? Math.min(deficit, Math.floor(bot.money * 0.25)) : 0;
+          const requestMoney = surplus > 50 && deficit <= 0
+            ? Math.min(Math.floor(surplus * 0.6), Math.floor(target.money * 0.2)) : 0;
 
-          const err = this.proposeTrade(botId, {
-            toId: target.id,
-            offerProperties: [offerSi],
-            offerMoney,
-            offerJailCards: 0,
-            requestProperties: [wantSi],
-            requestMoney,
-            requestJailCards: 0,
-          });
-          if (!err) return; // proposed one trade, done
+          const score = wantValForBot - this.propGiveValue(offerSi, botId) - offerMoney + requestMoney * 0.5;
+          if (score < -50) continue;
+          candidates.push({ toId: target.id, offerProperties: [offerSi], offerMoney, requestProperties: [wantSi], requestMoney, score });
+        }
+
+        // ── Cash-only offer to complete monopoly ─────────────────────────
+        const completesMonopoly = (() => {
+          if (!wantSpace.group) return false;
+          const grp = getGroupSpaces(wantSpace.group);
+          return grp.every(i => i === wantSi || this.state.ownedProperties[i]?.ownerId === botId);
+        })();
+        if (completesMonopoly) {
+          const cashOffer = Math.min(Math.floor((wantSpace.price ?? 0) * 1.5), Math.floor(bot.money * 0.4));
+          if (cashOffer >= (wantSpace.price ?? 0) * 0.8 && bot.money - cashOffer > 200) {
+            candidates.push({ toId: target.id, offerProperties: [], offerMoney: cashOffer, requestProperties: [wantSi], requestMoney: 0, score: wantValForBot - cashOffer + 500 });
+          }
+        }
+      }
+
+      // ── Sell low-value property for cash when strapped ───────────────────
+      const exposure = this.maxRentExposure(botId);
+      if (bot.money < exposure * 1.5 && bot.properties.length > 2) {
+        for (const offerSi of bot.properties) {
+          const offerOwned = this.state.ownedProperties[offerSi];
+          if (offerOwned?.mortgaged || (offerOwned?.houses ?? 0) > 0) continue;
+          const offerSpace = BOARD_SPACES[offerSi];
+          if (offerSpace.group && this.groupOwned(offerSpace.group, botId) > 0) continue;
+          const askPrice = Math.floor((offerSpace.price ?? 0) * 0.85);
+          if (target.money >= askPrice + 100) {
+            candidates.push({ toId: target.id, offerProperties: [offerSi], offerMoney: 0, requestProperties: [], requestMoney: askPrice, score: askPrice - this.propGiveValue(offerSi, botId) + 100 });
+          }
         }
       }
     }
+
+    if (candidates.length === 0) return;
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    this.proposeTrade(botId, {
+      toId: best.toId,
+      offerProperties: best.offerProperties,
+      offerMoney: best.offerMoney,
+      offerJailCards: 0,
+      requestProperties: best.requestProperties,
+      requestMoney: best.requestMoney,
+      requestJailCards: 0,
+    });
   }
+
 
   /** Build a shuffled mapping of property city names & flags */
   private buildPropertyShuffle(): Record<number, { name: string; flag?: string }> {
