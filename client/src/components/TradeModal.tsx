@@ -14,7 +14,7 @@ interface ProposeProps {
 
 export default function TradeModal({ gameState, myId, onClose, inline }: ProposeProps) {
   const me = gameState.players.find(p => p.id === myId)!;
-  const others = gameState.players.filter(p => p.id !== myId && !p.bankrupt && !p.isBot);
+  const others = gameState.players.filter(p => p.id !== myId && !p.bankrupt);
 
   const [targetId, setTargetId] = useState(others[0]?.id ?? '');
   const [offerProps, setOfferProps] = useState<number[]>([]);
