@@ -174,17 +174,71 @@ export function IncomingTradeModal({
   const decline = () => socket.emit('decline_trade', { tradeId: trade.id });
   const cancel  = () => socket.emit('decline_trade', { tradeId: trade.id });
 
-  // Proposer waiting for response
-  if (trade.fromId === myId && trade.toId !== myId) {
+  const isProposer = trade.fromId === myId;
+  const isRecipient = trade.toId === myId;
+  const isObserver = !isProposer && !isRecipient;
+
+  // Shared trade detail columns (reused by proposer + recipient + observer)
+  const tradeColumns = (
+    <div className="trade-columns">
+      <div className="trade-col">
+        <div className="trade-col-header" style={{ color: from?.color }}>
+          {from?.token} {from?.name} offers
+        </div>
+        {trade.offerProperties.length === 0 && trade.offerMoney === 0 && trade.offerJailCards === 0 && (
+          <div className="trade-nothing">Nothing</div>
+        )}
+        {trade.offerProperties.map(si => {
+          const space = BOARD_SPACES[si];
+          const color = space.group ? GROUP_COLORS[space.group] : '#888';
+          return (
+            <div key={si} className="trade-prop-item" style={{ borderColor: color }}>
+              {space.flag} {space.name}
+            </div>
+          );
+        })}
+        {trade.offerMoney > 0 && <div className="trade-money-item">💵 ${trade.offerMoney.toLocaleString()}</div>}
+        {trade.offerJailCards > 0 && <div className="trade-money-item">🃏 ×{trade.offerJailCards} Jail card</div>}
+      </div>
+
+      <div className="trade-divider">⇌</div>
+
+      <div className="trade-col">
+        <div className="trade-col-header" style={{ color: to?.color }}>
+          {to?.token} {to?.name} gives
+        </div>
+        {trade.requestProperties.length === 0 && trade.requestMoney === 0 && trade.requestJailCards === 0 && (
+          <div className="trade-nothing">Nothing</div>
+        )}
+        {trade.requestProperties.map(si => {
+          const space = BOARD_SPACES[si];
+          const color = space.group ? GROUP_COLORS[space.group] : '#888';
+          return (
+            <div key={si} className="trade-prop-item" style={{ borderColor: color }}>
+              {space.flag} {space.name}
+            </div>
+          );
+        })}
+        {trade.requestMoney > 0 && <div className="trade-money-item">💵 ${trade.requestMoney.toLocaleString()}</div>}
+        {trade.requestJailCards > 0 && <div className="trade-money-item">🃏 ×{trade.requestJailCards} Jail card</div>}
+      </div>
+    </div>
+  );
+
+  // Proposer waiting for response — show full trade details + cancel
+  if (isProposer) {
     const waitBody = (
-      <div className="trade-waiting-body">
-        <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
+      <>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>
           ⏳ Waiting for <b>{to?.name}</b> to respond…
         </div>
-        <button className="btn-action" style={{ width: '100%' }} onClick={cancel}>
-          Cancel offer
-        </button>
-      </div>
+        {tradeColumns}
+        <div className="trade-footer" style={{ marginTop: 10 }}>
+          <button className="btn-action" style={{ width: '100%' }} onClick={cancel}>
+            Cancel offer
+          </button>
+        </div>
+      </>
     );
     if (inline) return <div className="trade-inline">{waitBody}</div>;
     return (
@@ -199,55 +253,27 @@ export function IncomingTradeModal({
     );
   }
 
+  // Observer: read-only view
+  if (isObserver) {
+    const observerBody = (
+      <>
+        <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 8 }}>
+          👀 Trade in progress
+        </div>
+        {tradeColumns}
+      </>
+    );
+    if (inline) return <div className="trade-inline">{observerBody}</div>;
+    return null;
+  }
+
   // Recipient reviewing offer
   const reviewBody = (
     <>
       <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 8 }}>
         Offer from {from?.token} <b>{from?.name}</b>
       </div>
-      <div className="trade-columns">
-        <div className="trade-col">
-          <div className="trade-col-header" style={{ color: from?.color }}>
-            {from?.token} {from?.name} offers
-          </div>
-          {trade.offerProperties.length === 0 && trade.offerMoney === 0 && trade.offerJailCards === 0 && (
-            <div className="trade-nothing">Nothing</div>
-          )}
-          {trade.offerProperties.map(si => {
-            const space = BOARD_SPACES[si];
-            const color = space.group ? GROUP_COLORS[space.group] : '#888';
-            return (
-              <div key={si} className="trade-prop-item" style={{ borderColor: color }}>
-                {space.flag} {space.name}
-              </div>
-            );
-          })}
-          {trade.offerMoney > 0 && <div className="trade-money-item">💵 ${trade.offerMoney.toLocaleString()}</div>}
-          {trade.offerJailCards > 0 && <div className="trade-money-item">🃏 ×{trade.offerJailCards} Jail card</div>}
-        </div>
-
-        <div className="trade-divider">⇌</div>
-
-        <div className="trade-col">
-          <div className="trade-col-header" style={{ color: to?.color }}>
-            You give
-          </div>
-          {trade.requestProperties.length === 0 && trade.requestMoney === 0 && trade.requestJailCards === 0 && (
-            <div className="trade-nothing">Nothing</div>
-          )}
-          {trade.requestProperties.map(si => {
-            const space = BOARD_SPACES[si];
-            const color = space.group ? GROUP_COLORS[space.group] : '#888';
-            return (
-              <div key={si} className="trade-prop-item" style={{ borderColor: color }}>
-                {space.flag} {space.name}
-              </div>
-            );
-          })}
-          {trade.requestMoney > 0 && <div className="trade-money-item">💵 ${trade.requestMoney.toLocaleString()}</div>}
-          {trade.requestJailCards > 0 && <div className="trade-money-item">🃏 ×{trade.requestJailCards} Jail card</div>}
-        </div>
-      </div>
+      {tradeColumns}
       <div className="trade-footer">
         <button className="btn-action btn-decline" onClick={decline}>✗ Decline</button>
         <button className="btn-primary btn-buy" style={{ width: 'auto', padding: '10px 24px' }} onClick={accept}>
@@ -319,6 +345,7 @@ function MoneyInput({ value, max, onChange }: { value: number; max: number; onCh
       <input
         type="number" min={0} max={max} value={value}
         onChange={e => onChange(Math.min(max, Math.max(0, Number(e.target.value))))}
+        onFocus={e => e.target.select()}
         className="input trade-number-input"
       />
       <span className="trade-max-hint">max ${max.toLocaleString()}</span>

@@ -11,7 +11,11 @@ import {
 import { CardDeck } from './Cards';
 
 const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63','#00bcd4'];
-const PLAYER_TOKENS = ['🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','🎸'];
+const PLAYER_TOKENS = [
+  '🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','🎸',
+  '🏎️','🦊','🐼','🎯','🌵','🦄','💎','🏆','🤖',
+  '🎭','🍀','🦋','🐬','🦅','🎪','🧲','🪄','🦈',
+];
 const MAX_PLAYERS = 9;
 const JAIL_FINE = 50;
 const MAX_JAIL_TURNS = 3;
@@ -1294,15 +1298,27 @@ export class GameRoom {
   private buildPropertyShuffle(): Record<number, { name: string; flag?: string }> {
     const propSpaces = BOARD_SPACES.filter(s => s.type === 'property');
     const overrides: Record<number, { name: string; flag?: string }> = {};
-    // Extract city name+flag pairs and shuffle them
-    const cities = propSpaces.map(s => ({ name: s.name, flag: s.flag }));
-    for (let i = cities.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cities[i], cities[j]] = [cities[j], cities[i]];
+
+    // Group spaces by color group, then shuffle city names only within each group
+    const groups: Record<string, typeof propSpaces> = {};
+    for (const s of propSpaces) {
+      const g = s.group ?? '__none__';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(s);
     }
-    propSpaces.forEach((s, i) => {
-      overrides[s.index] = cities[i];
-    });
+
+    for (const groupSpaces of Object.values(groups)) {
+      const cities = groupSpaces.map(s => ({ name: s.name, flag: s.flag }));
+      // Fisher-Yates shuffle within the group
+      for (let i = cities.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cities[i], cities[j]] = [cities[j], cities[i]];
+      }
+      groupSpaces.forEach((s, i) => {
+        overrides[s.index] = cities[i];
+      });
+    }
+
     return overrides;
   }
 }

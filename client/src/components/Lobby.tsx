@@ -3,7 +3,11 @@ import { socket } from '../socket';
 import { GameState } from '../types/game';
 import SettingsPanel from './SettingsPanel';
 
-const ALL_TOKENS = ['🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','🎸'];
+const ALL_TOKENS = [
+  '🚀','🚂','🎩','🐶','🦁','🐉','🚁','⚓','🎸',
+  '🏎️','🦊','🐼','🎯','🌵','🦄','💎','🏆','🤖',
+  '🎭','🍀','🦋','🐬','🦅','🎪','🧲','🪄','🦈',
+];
 
 interface Props {
   gameState: GameState;

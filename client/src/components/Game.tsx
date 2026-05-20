@@ -12,8 +12,8 @@ import TradeModal, { IncomingTradeModal } from './TradeModal';
 import AuctionModal from './AuctionModal';
 import EndScreen from './EndScreen';
 
-// Must match CSS: 2 * --cs + 14 * --sw  (2*140 + 14*78 = 1372)
-const BOARD_PX = 1372;
+// Must match CSS: 2 * --cs + 14 * --sw  (2*140 + 14*88 = 1512)
+const BOARD_PX = 1512;
 
 interface Props {
   gameState: GameState;
@@ -82,13 +82,17 @@ export default function Game({ gameState, myId, onLeave }: Props) {
 
   useGameSounds(gameState.log, isMyTurn);
 
+  // myTrade = I'm a participant (triggers alert dot)
+  // anyTrade = any trade active (shows trade tab content for all players)
   const myTrade = gameState.pendingTrade &&
     (gameState.pendingTrade.fromId === myId || gameState.pendingTrade.toId === myId);
+  const anyTrade = !!gameState.pendingTrade;
 
   // Auto-selected right panel content (priority order)
   const showAuctionPanel = !!gameState.pendingAuction;
   const showCardPanel = !!currentCard && !showAuctionPanel;
-  const showTradePanel = !!myTrade || (userTab === 'trade' && !showAuctionPanel && !showCardPanel);
+  const showTradePanel = anyTrade && !showAuctionPanel && !showCardPanel ||
+    (userTab === 'trade' && !showAuctionPanel && !showCardPanel);
   const showLogPanel = !showAuctionPanel && !showCardPanel && !showTradePanel;
 
   useEffect(() => {
